@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch"
+      "WebSearch",
+      "Bash(npm create:*)",
+      "Bash(npm install:*)",
+      "Bash(npx shadcn@latest init --defaults)",
+      "Bash(npx shadcn@latest add avatar dialog dropdown-menu sheet toast separator)",
+      "Bash(npx shadcn@latest add avatar dialog dropdown-menu sheet sonner separator textarea --yes)",
+      "Bash(npm list:*)",
+      "Bash(npm run:*)",
+      "Bash(npx tsr:*)",
+      "Bash(npx @tanstack/router-cli generate)"
     ]
   }
 }
