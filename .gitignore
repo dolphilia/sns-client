@@ -1,0 +1,10 @@
+CLAUDE.md
+
+# Python 仮想環境
+research/.venv/
+
+# Jupyter チェックポイント
+research/notebooks/.ipynb_checkpoints/
+
+# モデルキャッシュ（HuggingFace）
+research/data/models/

@@ -10,7 +10,19 @@
       "Bash(npm list:*)",
       "Bash(npm run:*)",
       "Bash(npx tsr:*)",
-      "Bash(npx @tanstack/router-cli generate)"
+      "Bash(npx @tanstack/router-cli generate)",
+      "Bash(wc -l /Users/dolphilia/github/sns-client/prototypes/prototype-01/src/**/*.tsx /Users/dolphilia/github/sns-client/prototypes/prototype-01/src/**/*.ts)",
+      "Bash(grep -r \"export const\\\\|export function\" /Users/dolphilia/github/sns-client/prototypes/prototype-01/src/routes/*.tsx)",
+      "Bash(uv --version)",
+      "Bash(pip3 --version brew list)",
+      "Bash(pyenv versions:*)",
+      "Bash(pyenv local:*)",
+      "Bash(python -m venv .venv)",
+      "Bash(.venv/bin/pip install:*)",
+      "Bash(.venv/bin/python -m ipykernel install --user --name sns-research --display-name 'SNS Research \\(Python 3.10\\)')",
+      "Bash(.venv/bin/python -)",
+      "Bash(.venv/bin/python -c ':*)",
+      "Bash(mecab --version)"
     ]
   }
 }

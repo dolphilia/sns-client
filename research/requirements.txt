@@ -1,0 +1,47 @@
+# ============================================================
+# SNS クライアント リサーチ環境
+# Python 3.10.6 (.python-version で固定)
+# ============================================================
+
+# --- Jupyter ---
+jupyterlab>=4.0
+ipykernel>=6.0
+ipywidgets>=8.0
+
+# --- データ処理 ---
+numpy>=1.24
+pandas>=2.0
+scipy>=1.11
+
+# --- 可視化 ---
+matplotlib>=3.7
+seaborn>=0.12
+japanize-matplotlib          # 日本語フォント自動設定
+
+# --- 機械学習 基盤 ---
+torch>=2.1                   # Apple Silicon (MPS) 対応版
+torchvision>=0.16
+torchaudio>=2.1
+transformers>=4.40
+accelerate>=0.27             # 推論高速化
+sentencepiece>=0.1.99        # 多言語モデルのトークナイザー
+huggingface-hub>=0.22
+
+# --- 画像処理 ---
+Pillow>=10.0
+opencv-python>=4.8
+requests>=2.31
+
+# --- 音声処理 ---
+librosa>=0.10
+soundfile>=0.12
+
+# ============================================================
+# オプション: 日本語 NLP（MeCab が必要）
+# インストール方法:
+#   brew install mecab mecab-ipadic
+#   pip install oseti mecab-python3 unidic-lite
+# ============================================================
+# oseti
+# mecab-python3
+# unidic-lite
