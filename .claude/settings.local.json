@@ -22,7 +22,11 @@
       "Bash(.venv/bin/python -m ipykernel install --user --name sns-research --display-name 'SNS Research \\(Python 3.10\\)')",
       "Bash(.venv/bin/python -)",
       "Bash(.venv/bin/python -c ':*)",
-      "Bash(mecab --version)"
+      "Bash(mecab --version)",
+      "Bash(npx tanstack-router *)",
+      "Bash(./node_modules/.bin/tanstack-router generate *)",
+      "Bash(npx tsc *)",
+      "Bash(curl -s http://localhost:1420)"
     ]
   }
 }
