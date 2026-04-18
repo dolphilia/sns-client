@@ -3,7 +3,7 @@ import { useCallback } from "react";
 import { WaitingScreen } from "@/components/edition/WaitingScreen";
 import { EditionReader } from "@/components/edition/EditionReader";
 import { useEditionStore } from "@/stores/editionStore";
-import { useSettingsStore } from "@/stores/settingsStore";
+import { useSettingsStore, DISCOVER_FEED_URI } from "@/stores/settingsStore";
 import { useAuthStore } from "@/stores/authStore";
 import { agent } from "@/lib/agent";
 import type { AppBskyFeedDefs } from "@atproto/api";
@@ -27,22 +27,32 @@ function HomePage() {
     setFetching(true);
     setFetchError(null);
     try {
-      const res = await agent.getTimeline({ limit: editionSettings.size });
-      let posts: AppBskyFeedDefs.FeedViewPost[] = res.data.feed;
+      const { feedSource, customFeedUri, size, includeReposts } = editionSettings;
 
-      // リポストを除外（設定に応じて）
-      if (!editionSettings.includeReposts) {
+      let posts: AppBskyFeedDefs.FeedViewPost[];
+
+      if (feedSource === "following") {
+        const res = await agent.getTimeline({ limit: size });
+        posts = res.data.feed;
+      } else {
+        const feedUri =
+          feedSource === "discover" ? DISCOVER_FEED_URI : customFeedUri.trim();
+        if (!feedUri) {
+          setFetchError("フィードURIが設定されていません");
+          return;
+        }
+        const res = await agent.app.bsky.feed.getFeed({ feed: feedUri, limit: size });
+        posts = res.data.feed;
+      }
+
+      if (!includeReposts) {
         posts = posts.filter(
           (item) => item.reason?.$type !== "app.bsky.feed.defs#reasonRepost"
         );
       }
 
-      // 自分の投稿を除外（タイムラインには含めない）
       const myDid = session.did;
       posts = posts.filter((item) => item.post.author.did !== myDid);
-
-      // Layer 1 フィルタを事前適用（フィルタ済み投稿は号から除外ではなく、PostCard 側で折り畳み）
-      // ※ 除外はせず PostCard の既存フィルタ表示ロジックに委ねる
 
       fetchEdition(posts);
     } catch (e) {
@@ -53,8 +63,7 @@ function HomePage() {
       setFetching(false);
     }
   }, [
-    editionSettings.size,
-    editionSettings.includeReposts,
+    editionSettings,
     fetchEdition,
     setFetching,
     setFetchError,

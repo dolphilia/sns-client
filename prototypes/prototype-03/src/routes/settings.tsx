@@ -3,7 +3,7 @@ import { useState } from "react";
 import { X, Plus } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useSettingsStore } from "@/stores/settingsStore";
-import type { EditionSize } from "@/stores/settingsStore";
+import type { EditionSize, FeedSource } from "@/stores/settingsStore";
 import { Button } from "@/components/ui/button";
 
 function SettingsPage() {
@@ -27,6 +27,11 @@ function SettingsPage() {
   const [newLabel, setNewLabel] = useState("");
 
   const editionSizeOptions: EditionSize[] = [10, 20, 30, 50];
+  const feedSourceOptions: { value: FeedSource; label: string; description: string }[] = [
+    { value: "following", label: "フォロー中", description: "フォローしているユーザーの新着投稿" },
+    { value: "discover", label: "Discover", description: "Bluesky のおすすめフィード" },
+    { value: "custom", label: "カスタム", description: "フィードURIを直接指定" },
+  ];
 
   const handleAddKeyword = () => {
     if (!newKeyword.trim()) return;
@@ -257,6 +262,43 @@ function SettingsPage() {
             フィード（号）の設定
           </h2>
           <div className="space-y-4">
+            {/* フィードソース */}
+            <div>
+              <p className="text-sm font-medium mb-1">取得元フィード</p>
+              <p className="text-xs text-muted-foreground mb-2">
+                号として読み込むフィードを選択します
+              </p>
+              <div className="space-y-2">
+                {feedSourceOptions.map(({ value, label, description }) => (
+                  <label key={value} className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="feedSource"
+                      value={value}
+                      checked={editionSettings.feedSource === value}
+                      onChange={() => setEditionSettings({ feedSource: value })}
+                      className="accent-primary"
+                    />
+                    <div>
+                      <p className="text-sm font-medium">{label}</p>
+                      <p className="text-xs text-muted-foreground">{description}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+              {editionSettings.feedSource === "custom" && (
+                <div className="mt-3">
+                  <input
+                    type="text"
+                    value={editionSettings.customFeedUri}
+                    onChange={(e) => setEditionSettings({ customFeedUri: e.target.value })}
+                    placeholder="at://did:plc:.../app.bsky.feed.generator/..."
+                    className="w-full text-sm border border-border rounded-md px-3 py-1.5 bg-background focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+                  />
+                </div>
+              )}
+            </div>
+
             {/* 号のサイズ */}
             <div>
               <p className="text-sm font-medium mb-1">1号あたりの件数</p>

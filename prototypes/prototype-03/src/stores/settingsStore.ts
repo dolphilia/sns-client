@@ -11,11 +11,18 @@ export interface FilterSettings {
 }
 
 export type EditionSize = 10 | 20 | 30 | 50;
+export type FeedSource = "following" | "discover" | "custom";
+
+// Bluesky公式DiscoverフィードのURI
+export const DISCOVER_FEED_URI =
+  "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.generator/whats-hot";
 
 export interface EditionSettings {
-  size: EditionSize;               // 1号あたりの件数
-  includeReposts: boolean;         // リポストを号に含めるか
-  ambientSyncEnabled: boolean;     // 環境同期（時間帯による色変化）
+  size: EditionSize;
+  includeReposts: boolean;
+  ambientSyncEnabled: boolean;
+  feedSource: FeedSource;
+  customFeedUri: string;
 }
 
 interface SettingsState {
@@ -52,6 +59,8 @@ const defaultEditionSettings: EditionSettings = {
   size: 30,
   includeReposts: false,
   ambientSyncEnabled: true,
+  feedSource: "following",
+  customFeedUri: "",
 };
 
 export const useSettingsStore = create<SettingsState>()(
