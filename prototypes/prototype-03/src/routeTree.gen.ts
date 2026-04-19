@@ -17,6 +17,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as BookmarksRouteImport } from './routes/bookmarks'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ResearchOllamaRouteImport } from './routes/research.ollama'
 import { Route as PostHandleRkeyRouteImport } from './routes/post.$handle.$rkey'
 
 const SettingsRoute = SettingsRouteImport.update({
@@ -59,6 +60,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResearchOllamaRoute = ResearchOllamaRouteImport.update({
+  id: '/research/ollama',
+  path: '/research/ollama',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PostHandleRkeyRoute = PostHandleRkeyRouteImport.update({
   id: '/post/$handle/$rkey',
   path: '/post/$handle/$rkey',
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/research/ollama': typeof ResearchOllamaRoute
   '/post/$handle/$rkey': typeof PostHandleRkeyRoute
 }
 export interface FileRoutesByTo {
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/research/ollama': typeof ResearchOllamaRoute
   '/post/$handle/$rkey': typeof PostHandleRkeyRoute
 }
 export interface FileRoutesById {
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRoute
+  '/research/ollama': typeof ResearchOllamaRoute
   '/post/$handle/$rkey': typeof PostHandleRkeyRoute
 }
 export interface FileRouteTypes {
@@ -110,6 +119,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/profile'
     | '/settings'
+    | '/research/ollama'
     | '/post/$handle/$rkey'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/profile'
     | '/settings'
+    | '/research/ollama'
     | '/post/$handle/$rkey'
   id:
     | '__root__'
@@ -132,6 +143,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/profile'
     | '/settings'
+    | '/research/ollama'
     | '/post/$handle/$rkey'
   fileRoutesById: FileRoutesById
 }
@@ -144,6 +156,7 @@ export interface RootRouteChildren {
   NotificationsRoute: typeof NotificationsRoute
   ProfileRoute: typeof ProfileRoute
   SettingsRoute: typeof SettingsRoute
+  ResearchOllamaRoute: typeof ResearchOllamaRoute
   PostHandleRkeyRoute: typeof PostHandleRkeyRoute
 }
 
@@ -205,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/research/ollama': {
+      id: '/research/ollama'
+      path: '/research/ollama'
+      fullPath: '/research/ollama'
+      preLoaderRoute: typeof ResearchOllamaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/post/$handle/$rkey': {
       id: '/post/$handle/$rkey'
       path: '/post/$handle/$rkey'
@@ -224,6 +244,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotificationsRoute: NotificationsRoute,
   ProfileRoute: ProfileRoute,
   SettingsRoute: SettingsRoute,
+  ResearchOllamaRoute: ResearchOllamaRoute,
   PostHandleRkeyRoute: PostHandleRkeyRoute,
 }
 export const routeTree = rootRouteImport
