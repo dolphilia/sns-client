@@ -7,6 +7,13 @@
       "runtimeArgs": ["run", "dev"],
       "port": 1420,
       "cwd": "prototypes/prototype-03"
+    },
+    {
+      "name": "prototype-04",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 1420,
+      "cwd": "prototypes/prototype-04"
     }
   ]
 }

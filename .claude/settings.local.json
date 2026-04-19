@@ -50,7 +50,10 @@
       "Bash(curl -s http://localhost:11434/api/chat -d '{ \"model\": \"qwen3.5:9b\", \"stream\": false, \"options\": {\"temperature\": 0.1, \"num_predict\": 300}, \"think\": false, \"messages\": [{\"role\": \"user\", \"content\": \"あいつは本当に使えない。なんでこんな奴が生きてるんだ\\\\n\\\\n以下のJSON形式のみで回答してください：\\\\n{\\\\\"stress_score\\\\\": 数値, \\\\\"category\\\\\": \\\\\"カテゴリ名\\\\\", \\\\\"reason\\\\\": \\\\\"理由\\\\\", \\\\\"confidence\\\\\": \\\\\"high/medium/low\\\\\"}\"}] }')",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); c=d['message']['content']; t=d['message'].get\\('thinking',''\\); print\\('CONTENT:', repr\\(c[:300]\\)\\); print\\('THINKING:', repr\\(t[:100]\\)\\)\")",
       "Bash(curl -s http://localhost:11434/api/chat -d '{ \"model\": \"qwen3.5:9b\", \"stream\": false, \"think\": false, \"options\": {\"temperature\": 0.1, \"num_predict\": 300}, \"messages\": [{\"role\": \"user\", \"content\": \"あなたはSNS投稿のストレス検出AIです。\\\\n以下の投稿テキストを分析し、閲覧者がストレスを感じる可能性を0.0から1.0の小数で評価してください。\\\\n\\\\nスコア例：0.0=全く問題なし、0.3=やや気になる、0.6=問題あり、0.9=非常に有害\\\\n\\\\n必ず以下のJSON形式だけで回答してください。JSON以外のテキストは出力しないでください：\\\\n{\\\\\"stress_score\\\\\": 0.0以上1.0以下の小数, \\\\\"category\\\\\": \\\\\"攻撃的表現/脅迫/ヘイトスピーチ/自傷関連/扇動/不安煽り/論争的主張/問題なし のいずれか\\\\\", \\\\\"reason\\\\\": \\\\\"判定理由を1文で\\\\\", \\\\\"confidence\\\\\": \\\\\"high/medium/low のいずれか\\\\\"}\\\\n\\\\n投稿テキスト：\\\\nあいつは本当に使えない。なんでこんな奴が生きてるんだ\"}] }')",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(cd /Users/dolphilia/github/sns-client/prototypes/prototype-04 grep -r \"useMLFilter\\\\|mlFilter\\\\|filterStore\\\\|editionStore\" src/ --include=\"*.ts\" --include=\"*.tsx\" -n)",
+      "Bash(sed -i '' 's/ skipFilter//' /Users/dolphilia/github/sns-client/prototypes/prototype-04/src/routes/bookmarks.tsx)",
+      "Bash(sed -i '' 's/ skipFilter//' /Users/dolphilia/github/sns-client/prototypes/prototype-04/src/routes/my-posts.tsx)"
     ]
   }
 }
