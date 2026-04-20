@@ -1,10 +1,12 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { X, Plus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, Plus, RefreshCw } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
-import { useSettingsStore, strengthToThreshold } from "@/stores/settingsStore";
+import { useSettingsStore, strengthToThreshold, RECOMMENDED_MODELS } from "@/stores/settingsStore";
 import type { EditionSize, FeedSource } from "@/stores/settingsStore";
 import { Button } from "@/components/ui/button";
+import { ollamaFilterService } from "@/lib/filters/ollamaFilter";
+import type { InstalledModel } from "@/lib/filters/ollamaFilter";
 
 function SettingsPage() {
   const session = useAuthStore((s) => s.session);
@@ -22,6 +24,22 @@ function SettingsPage() {
   } = useSettingsStore();
 
   const [newKeyword, setNewKeyword] = useState("");
+  const [installedModels, setInstalledModels] = useState<InstalledModel[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
+
+  const loadInstalledModels = async () => {
+    setLoadingModels(true);
+    try {
+      const models = await ollamaFilterService.getInstalledModels();
+      setInstalledModels(models);
+    } finally {
+      setLoadingModels(false);
+    }
+  };
+
+  useEffect(() => {
+    loadInstalledModels();
+  }, []);
 
   const editionSizeOptions: EditionSize[] = [10, 20, 30, 50];
   const feedSourceOptions: { value: FeedSource; label: string; description: string }[] = [
@@ -79,7 +97,7 @@ function SettingsPage() {
               <div>
                 <p className="text-sm font-medium">LLM 吟味を有効にする</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  ローカル LLM（qwen3.5:9b）が投稿を吟味し、通過したものだけ届けます
+                  ローカル LLM（{filterSettings.selectedModel}）が投稿を吟味し、通過したものだけ届けます
                 </p>
               </div>
               <input
@@ -121,6 +139,75 @@ function SettingsPage() {
                     <span>弱（多めに届く）</span>
                     <span>強（厳選して届く）</span>
                   </div>
+                </div>
+
+                {/* LLM モデル選択 */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-medium">使用する LLM モデル</p>
+                    <button
+                      onClick={loadInstalledModels}
+                      disabled={loadingModels}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                      title="インストール済みモデルを再読み込み"
+                    >
+                      <RefreshCw size={13} className={loadingModels ? "animate-spin" : ""} />
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Ollama にインストール済みのモデルから選択します
+                  </p>
+                  <div className="space-y-1.5">
+                    {RECOMMENDED_MODELS.map((rec) => {
+                      const installed = installedModels.find(
+                        (m) => m.name === rec.name || m.name.startsWith(rec.name.split(":")[0])
+                      );
+                      const isSelected = filterSettings.selectedModel === rec.name;
+                      return (
+                        <label
+                          key={rec.name}
+                          className={`flex items-center gap-3 rounded-lg border px-3 py-2 cursor-pointer transition-colors ${
+                            isSelected
+                              ? "border-primary bg-primary/5"
+                              : installed
+                              ? "border-border hover:border-foreground/40"
+                              : "border-border opacity-40 cursor-not-allowed"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="selectedModel"
+                            value={rec.name}
+                            checked={isSelected}
+                            disabled={!installed}
+                            onChange={() => setFilterSettings({ selectedModel: rec.name })}
+                            className="accent-primary"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-sm font-medium">{rec.label}</span>
+                              <span className="text-xs text-muted-foreground">{rec.sizeGb}GB</span>
+                              <span className="text-xs text-muted-foreground">— {rec.note}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground font-mono mt-0.5">{rec.name}</p>
+                          </div>
+                          {installed ? (
+                            <span className="text-[10px] text-green-600 font-medium shrink-0">インストール済み</span>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground shrink-0">未インストール</span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {loadingModels && (
+                    <p className="text-xs text-muted-foreground mt-1.5">モデル情報を読み込み中…</p>
+                  )}
+                  {!loadingModels && installedModels.length === 0 && (
+                    <p className="text-xs text-amber-600 mt-1.5">
+                      Ollama に接続できないか、モデルが見つかりません。Ollama が起動しているか確認してください。
+                    </p>
+                  )}
                 </div>
 
                 {/* 前段キーワードフィルター */}

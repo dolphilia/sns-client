@@ -53,7 +53,14 @@
       "Bash(python3 -c ' *)",
       "Bash(cd /Users/dolphilia/github/sns-client/prototypes/prototype-04 grep -r \"useMLFilter\\\\|mlFilter\\\\|filterStore\\\\|editionStore\" src/ --include=\"*.ts\" --include=\"*.tsx\" -n)",
       "Bash(sed -i '' 's/ skipFilter//' /Users/dolphilia/github/sns-client/prototypes/prototype-04/src/routes/bookmarks.tsx)",
-      "Bash(sed -i '' 's/ skipFilter//' /Users/dolphilia/github/sns-client/prototypes/prototype-04/src/routes/my-posts.tsx)"
+      "Bash(sed -i '' 's/ skipFilter//' /Users/dolphilia/github/sns-client/prototypes/prototype-04/src/routes/my-posts.tsx)",
+      "Bash(echo \"gemma4:4b pull PID: $!\")",
+      "Bash(echo \"phi4-mini pull PID: $!\")",
+      "Read(//private/tmp/**)",
+      "Bash(curl -s \"https://registry.ollama.ai/api/v2/search?q=gemma4&limit=10\")",
+      "Bash(curl -s \"https://ollama.com/api/search?q=gemma4&limit=10\")",
+      "WebFetch(domain:ollama.com)",
+      "Bash(echo \"gemma4:e4b pull PID: $!\")"
     ]
   }
 }

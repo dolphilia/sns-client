@@ -1,6 +1,13 @@
 import type { FilterResult } from "./keywordFilter";
+import { DEFAULT_MODEL } from "@/stores/settingsStore";
 
 export type OllamaModelStatus = "idle" | "checking" | "ready" | "unavailable" | "error";
+
+export interface InstalledModel {
+  name: string;
+  sizeGb: number;
+  modifiedAt: string;
+}
 
 export interface StressAnalysis {
   stress_score: number;      // 0.0〜1.0
@@ -10,7 +17,6 @@ export interface StressAnalysis {
 }
 
 const OLLAMA_BASE_URL = "http://localhost:11434";
-const MODEL_NAME = "qwen3.5:9b";
 
 // Few-shot プロンプト：具体例でスコアのスケール感を固定する
 const SYSTEM_PROMPT = `あなたはSNS投稿の吟味AIです。投稿を読んで、閲覧者がストレスを感じる可能性を0.0から1.0の小数で評価してください。
@@ -69,7 +75,33 @@ class OllamaFilterService {
     for (const listener of this.statusListeners) listener(status);
   }
 
-  async checkAvailability(): Promise<boolean> {
+  /** Ollama にインストール済みのモデル一覧を取得 */
+  async getInstalledModels(): Promise<InstalledModel[]> {
+    try {
+      const res = await fetch(`${OLLAMA_BASE_URL}/api/tags`, {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!res.ok) return [];
+      const data = await res.json() as {
+        models: { name: string; size: number; modified_at: string }[];
+      };
+      return data.models.map((m) => ({
+        name: m.name,
+        sizeGb: Math.round((m.size / 1e9) * 10) / 10,
+        modifiedAt: m.modified_at,
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * 指定モデルが Ollama で利用可能か確認。
+   * modelName を省略すると DEFAULT_MODEL で確認。
+   */
+  async checkAvailability(modelName?: string): Promise<boolean> {
+    const target = modelName ?? DEFAULT_MODEL;
+
     if (this.checkPromise) {
       await this.checkPromise;
       return this._status === "ready";
@@ -78,13 +110,8 @@ class OllamaFilterService {
     this.setStatus("checking");
     this.checkPromise = (async () => {
       try {
-        const res = await fetch(`${OLLAMA_BASE_URL}/api/tags`, {
-          signal: AbortSignal.timeout(3000),
-        });
-        if (!res.ok) { this.setStatus("unavailable"); return; }
-
-        const data = await res.json() as { models: { name: string }[] };
-        const hasModel = data.models.some((m) => m.name.startsWith("qwen3.5"));
+        const models = await this.getInstalledModels();
+        const hasModel = models.some((m) => m.name === target || m.name.startsWith(target.split(":")[0]));
         this.setStatus(hasModel ? "ready" : "unavailable");
       } catch {
         this.setStatus("unavailable");
@@ -114,14 +141,14 @@ class OllamaFilterService {
     if (next) next();
   }
 
-  private async callOllama(text: string): Promise<StressAnalysis | null> {
+  private async callOllama(text: string, modelName: string): Promise<StressAnalysis | null> {
     await this.acquireSlot();
     try {
       const res = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: MODEL_NAME,
+          model: modelName,
           stream: false,
           think: false,
           options: { temperature: 0.1, num_predict: 150 },
@@ -161,18 +188,20 @@ class OllamaFilterService {
   }
 
   /** 詳細な分析結果を返す（研究ページ用） */
-  async analyzeDetailed(text: string): Promise<StressAnalysis | null> {
-    if (this._status === "idle") await this.checkAvailability();
+  async analyzeDetailed(text: string, modelName?: string): Promise<StressAnalysis | null> {
+    const model = modelName ?? DEFAULT_MODEL;
+    if (this._status === "idle") await this.checkAvailability(model);
     if (this._status !== "ready") return null;
-    return this.callOllama(text);
+    return this.callOllama(text, model);
   }
 
   /** 吟味結果を FilterResult 形式で返す（パイプライン用） */
-  async analyze(text: string, threshold: number): Promise<FilterResult> {
-    if (this._status === "idle") await this.checkAvailability();
+  async analyze(text: string, threshold: number, modelName?: string): Promise<FilterResult> {
+    const model = modelName ?? DEFAULT_MODEL;
+    if (this._status === "idle") await this.checkAvailability(model);
     if (this._status !== "ready") return { filtered: false, reason: null };
 
-    const analysis = await this.callOllama(text);
+    const analysis = await this.callOllama(text, model);
     if (!analysis) return { filtered: false, reason: null };
 
     if (analysis.stress_score >= threshold) {

@@ -87,7 +87,8 @@ export function useScreening() {
       startScreening(candidates.length);
 
       // Ollama が使えない場合はそのまま全件承認して号を確定
-      const ollamaReady = await ollamaFilterService.checkAvailability();
+      const { selectedModel } = filterSettings;
+      const ollamaReady = await ollamaFilterService.checkAvailability(selectedModel);
       if (!ollamaReady) {
         for (const post of candidates) {
           if (abortedRef.current) return;
@@ -122,7 +123,7 @@ export function useScreening() {
           return;
         }
 
-        const result = await ollamaFilterService.analyze(text, threshold);
+        const result = await ollamaFilterService.analyze(text, threshold, selectedModel);
         if (abortedRef.current) return;
 
         incrementScreened();
