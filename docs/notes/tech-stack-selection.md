@@ -3,6 +3,8 @@
 作成日: 2026-04-15  
 参照: [project-overview.md](project-overview.md) / [bluesky-api-guide.md](bluesky-api-guide.md)
 
+> 現在の方針では、デスクトップ基盤は Tauri ではなく Electron を採用する。このメモは初期プロトタイプ時点の技術選定履歴として残す。現行アプリの方針は [current-direction-20260629.md](current-direction-20260629.md) と [desktop-app-plan.md](../plans/desktop-app-plan.md) を参照する。
+
 > Bluesky 対応 SNS クライアント（デスクトップアプリ優先、ウェブアプリも視野）のプロトタイプを実装するための技術スタックを選定する。既定の方針（Node.js + TypeScript + Vite）を軸に、最も実装しやすく、将来の拡張にも耐えられる組み合わせを選ぶ。
 
 ---
