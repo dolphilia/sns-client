@@ -5,6 +5,19 @@ import { defaultSettings, getDefaultRules } from "./site-registry.js";
 import type { AppSettings, BrowserRule, SiteId } from "./types.js";
 
 const storageDirName = "sns-browser";
+const obsoleteRuleIds = new Set([
+  "x-composer-show-avatar",
+  "x-composer-show-audience",
+  "x-composer-show-reply-permission",
+  "x-composer-show-media",
+  "x-composer-show-gif",
+  "x-composer-show-image-generation",
+  "x-composer-show-poll",
+  "x-composer-show-emoji",
+  "x-composer-show-schedule",
+  "x-composer-show-location",
+  "x-composer-show-content-disclosure",
+]);
 
 function getStorageDir() {
   return path.join(app.getPath("userData"), storageDirName);
@@ -49,7 +62,32 @@ export async function saveSettings(settings: AppSettings) {
 }
 
 export async function loadRules(siteId: SiteId): Promise<BrowserRule[]> {
-  return (await readJsonFile<BrowserRule[]>(getRulesPath(siteId))) ?? getDefaultRules(siteId);
+  const defaults = getDefaultRules(siteId);
+  const saved = await readJsonFile<BrowserRule[]>(getRulesPath(siteId));
+  if (!saved) return defaults;
+
+  const activeSavedRules = saved.filter((rule) => !obsoleteRuleIds.has(rule.id));
+  const savedById = new Map(activeSavedRules.map((rule) => [rule.id, rule]));
+  const defaultIds = new Set(defaults.map((rule) => rule.id));
+
+  return [
+    ...defaults.map((defaultRule) => {
+      const savedRule = savedById.get(defaultRule.id);
+      if (!savedRule) return defaultRule;
+
+      return {
+        ...defaultRule,
+        ...savedRule,
+        siteId: defaultRule.siteId,
+        type: defaultRule.type,
+        runAt: defaultRule.runAt,
+        builtin: defaultRule.builtin,
+        visible: defaultRule.visible,
+        content: defaultRule.visible === false ? defaultRule.content : savedRule.content,
+      };
+    }),
+    ...activeSavedRules.filter((rule) => !defaultIds.has(rule.id)),
+  ];
 }
 
 export async function saveRules(siteId: SiteId, rules: BrowserRule[]) {

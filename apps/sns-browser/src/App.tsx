@@ -23,6 +23,7 @@ export default function App() {
   const [rules, setRules] = useState<BrowserRule[]>([]);
   const [savedRulesSignature, setSavedRulesSignature] = useState("");
   const [ready, setReady] = useState(false);
+  const rulesSaveSequenceRef = useRef(0);
 
   const activeSiteId = settings.activeSiteId;
   const dirty = ruleSignature(rules) !== savedRulesSignature;
@@ -92,6 +93,26 @@ export default function App() {
     setSavedRulesSignature(ruleSignature(rules));
   }
 
+  function changeRules(nextRules: BrowserRule[], options?: { persist?: boolean }) {
+    setRules(nextRules);
+    if (!options?.persist) return;
+
+    const saveSequence = rulesSaveSequenceRef.current + 1;
+    rulesSaveSequenceRef.current = saveSequence;
+    const nextSignature = ruleSignature(nextRules);
+
+    void window.snsBrowser
+      .saveRules(activeSiteId, nextRules)
+      .then(() => {
+        if (rulesSaveSequenceRef.current === saveSequence) {
+          setSavedRulesSignature(nextSignature);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to save CSS rules.", error);
+      });
+  }
+
   async function applyCurrentRules() {
     await window.snsBrowser.applyRules();
   }
@@ -120,7 +141,7 @@ export default function App() {
       </section>
       <RulePanel
         rules={rules}
-        onRulesChange={setRules}
+        onRulesChange={changeRules}
         onSave={() => void saveCurrentRules()}
         onApply={() => void applyCurrentRules()}
         dirty={dirty}

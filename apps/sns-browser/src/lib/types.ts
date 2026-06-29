@@ -15,6 +15,7 @@ export interface BrowserRule {
   name: string;
   description?: string;
   enabled: boolean;
+  visible?: boolean;
   type: "css" | "script";
   runAt: "document-start" | "document-end" | "document-idle";
   content: string;
