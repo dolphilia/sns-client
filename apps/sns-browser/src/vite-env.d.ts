@@ -24,7 +24,7 @@ declare global {
       goForward: () => Promise<void>;
       reload: () => Promise<void>;
       loadHome: () => Promise<void>;
-      applyRules: () => Promise<void>;
+      applyRules: (rules?: BrowserRule[]) => Promise<void>;
       openExternal: (url: string) => Promise<void>;
       onBrowserStateChanged: (listener: (state: BrowserState) => void) => () => void;
     };

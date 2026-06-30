@@ -4,7 +4,7 @@ import { installPermissionPolicy } from "./permission-policy.js";
 import { RuleRunner } from "./rule-runner.js";
 import { getSite } from "./site-registry.js";
 import { loadRules } from "./storage.js";
-import type { BrowserState, SiteId, ViewBounds } from "./types.js";
+import type { BrowserRule, BrowserState, SiteId, ViewBounds } from "./types.js";
 
 type StateListener = (state: BrowserState) => void;
 
@@ -80,8 +80,8 @@ export class ViewManager {
     this.view.webContents.reload();
   }
 
-  async applyRules() {
-    await this.ruleRunner.apply(this.view.webContents, await loadRules(this.activeSiteId));
+  async applyRules(rules?: BrowserRule[]) {
+    await this.ruleRunner.apply(this.view.webContents, rules ?? (await loadRules(this.activeSiteId)));
   }
 
   private createView() {

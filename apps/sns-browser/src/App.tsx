@@ -114,7 +114,7 @@ export default function App() {
   }
 
   async function applyCurrentRules() {
-    await window.snsBrowser.applyRules();
+    await window.snsBrowser.applyRules(rules);
   }
 
   async function openExternal() {

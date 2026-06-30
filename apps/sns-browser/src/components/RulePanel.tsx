@@ -1,6 +1,6 @@
 import Editor from "@monaco-editor/react";
 import { Check, CircleHelp, Copy, Download, RotateCcw, Save } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { BrowserRule, SiteId } from "../lib/types";
 
@@ -145,11 +145,14 @@ function downloadText(filename: string, content: string) {
 
 export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: RulePanelProps) {
   const presetRules = useMemo(() => rules.filter((rule) => rule.visible !== false), [rules]);
-  const editableCssRules = useMemo(() => rules.filter((rule) => rule.type === "css" && rule.visible !== false), [rules]);
   const enabledCssRules = useMemo(() => rules.filter((rule) => rule.enabled && rule.type === "css"), [rules]);
   const enabledScriptRules = useMemo(() => rules.filter((rule) => rule.enabled && rule.type === "script"), [rules]);
   const activeSiteId: SiteId = rules[0]?.siteId ?? "x";
   const activeExportTarget = exportTargets[activeSiteId];
+  const customCssRule = useMemo(
+    () => rules.find((rule) => rule.id === `${activeSiteId}-custom-css`) ?? null,
+    [activeSiteId, rules],
+  );
   const stylusCss = useMemo(() => buildStylusCss(rules), [rules]);
   const userScript = useMemo(() => buildUserScript(rules), [rules]);
   const sidebarRules = useMemo(() => presetRules.filter((rule) => rule.name.startsWith("左サイドバー:")), [presetRules]);
@@ -170,21 +173,8 @@ export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: Rule
     [presetRules],
   );
   const [activeTab, setActiveTab] = useState<RulePanelTab>("presets");
-  const [selectedRuleId, setSelectedRuleId] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
   const [exportMessage, setExportMessage] = useState("");
-
-  useEffect(() => {
-    if (!editableCssRules.length) {
-      setSelectedRuleId(null);
-      return;
-    }
-    if (!selectedRuleId || !editableCssRules.some((rule) => rule.id === selectedRuleId)) {
-      setSelectedRuleId(editableCssRules[0].id);
-    }
-  }, [editableCssRules, selectedRuleId]);
-
-  const selectedRule = editableCssRules.find((rule) => rule.id === selectedRuleId) ?? editableCssRules[0] ?? null;
 
   function updateRule(ruleId: string, patch: Partial<BrowserRule>, options?: { persist?: boolean }) {
     onRulesChange(rules.map((rule) => (rule.id === ruleId ? { ...rule, ...patch } : rule)), options);
@@ -259,7 +249,7 @@ export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: Rule
       <div className="panel-header">
         <div>
           <h2>表示設定</h2>
-          <p>プリセットの切り替えと詳細 CSS 編集を行います。</p>
+          <p>プリセットの切り替えとカスタム CSS 編集を行います。</p>
         </div>
         {dirty ? <span className="dirty-badge">未保存</span> : <span className="saved-badge">保存済み</span>}
       </div>
@@ -281,7 +271,7 @@ export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: Rule
           aria-selected={activeTab === "editor"}
           onClick={() => setActiveTab("editor")}
         >
-          詳細 CSS
+          カスタム CSS
         </button>
         <button
           className={activeTab === "export" ? "is-active" : ""}
@@ -335,30 +325,18 @@ export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: Rule
             ) : null}
           </div>
         ) : activeTab === "editor" ? (
-          <div className="editor-tab" role="tabpanel" aria-label="詳細 CSS">
-            <div className="rule-list">
-              {editableCssRules.map((rule) => (
-                <button
-                  className={`rule-item ${rule.id === selectedRule?.id ? "is-active" : ""}`}
-                  type="button"
-                  key={rule.id}
-                  onClick={() => setSelectedRuleId(rule.id)}
-                >
-                  <span>
-                    <strong>{rule.name}</strong>
-                    <small>{rule.enabled ? "ON" : "OFF"}</small>
-                  </span>
-                </button>
-              ))}
+          <div className="custom-css-tab" role="tabpanel" aria-label="カスタム CSS">
+            <div className="custom-css-note">
+              <strong>カスタム CSS</strong>
+              <p>プリセットの後に追加で適用する CSS です。既存プリセットの本文はここでは編集しません。</p>
             </div>
-
             <div className="editor-shell">
-              {selectedRule ? (
+              {customCssRule ? (
                 <Editor
                   height="100%"
                   language="css"
                   theme="vs-dark"
-                  value={selectedRule.content}
+                  value={customCssRule.content}
                   options={{
                     minimap: { enabled: false },
                     fontSize: 13,
@@ -368,10 +346,10 @@ export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: Rule
                     tabSize: 2,
                     automaticLayout: true,
                   }}
-                  onChange={(value) => updateRule(selectedRule.id, { content: value ?? "" })}
+                  onChange={(value) => updateRule(customCssRule.id, { content: value ?? "", enabled: true })}
                 />
               ) : (
-                <div className="empty-editor">CSS ルールがありません。</div>
+                <div className="empty-editor">カスタム CSS ルールがありません。</div>
               )}
             </div>
           </div>

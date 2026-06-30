@@ -747,9 +747,11 @@ DOM 変更や仮想スクロールで投稿が差し替わるため、`MutationO
 
 併用時の不具合として、4枚画像グリッドで2枚目以降を `display: none` しても、X 側のグリッド親や行構造が残り、残した1枚が上半分だけに描画されることがあった。これを避けるため、`表示メディアは1つ目だけ` は隠す対象だけでなく、残す1枚に `data-sns-browser-kept-media="true"`、複数メディアの共通親に `data-sns-browser-single-media-container="true"` を付けるようにした。さらに、残す1枚までの中間親に `data-sns-browser-single-media-path="true"` を付け、正方形トリミング CSS が外側の `aria-labelledby` 付きメディア枠、中間の行・列コンテナ、残した画像セルのすべてをフル幅・1:1 に寄せられるようにした。
 
-`実験的機能: 画像を小さな正方形で表示` も追加した。初期状態は OFF。ON にすると、タイムライン内の通常画像を `--sns-browser-small-square-media-size: 96px` の小さな正方形として表示する。ユーザースクリプトを Chrome 上で実行して検証した結果、X の通常画像では `aria-labelledby` を持つメディア枠から `div > div > div > div` と、その子の `div > div > div > div > div` に同じ `width` / `height` を当てると、画像枠が小さな正方形として安定しやすいことが分かったため、この階層を明示的に対象にする。
+`実験的機能: 画像を小さな正方形で表示` も追加した。初期状態は OFF。ON にすると、タイムライン内の通常画像を `--sns-browser-small-square-media-size: 96px` の小さな正方形として表示する。Firefox 上でユーザースクリプトを検証した結果、X の通常画像では `aria-labelledby` を持つメディア枠から `div > div > div > div` と、その子の `div > div > div > div > div` に同じ `width` / `height` を当てると、画像枠が小さな正方形として安定しやすいことが分かったため、この階層を明示的に対象にする。
 
 複数メディアを1枚表示にした場合は、`data-sns-browser-single-media-container="true"` を持つ div の親と祖父母に相当する `div:has(> [data-sns-browser-single-media-container="true"])` / `div:has(> div > [data-sns-browser-single-media-container="true"])` にも同じ正方形サイズを当てる。これにより、単に画像リンクだけを縮めて外側のメディア枠や余白が残る状態を避ける。`画像を正方形にトリミング` と同時に ON にした場合は、後に定義される `画像を小さな正方形で表示` の 96px 指定が優先される。
+
+調査で、小さな正方形表示が効かない原因の1つは、`div:has(a[href*="/photo/"]:has([data-testid="tweetPhoto"]))` のように `:has()` を入れ子にしていたことだった。Chrome の CSS selector では nested `:has()` は無効になりやすいため、`div:has(a[href*="/photo/"] [data-testid="tweetPhoto"])` のように子孫条件へ置き換えた。大きい正方形トリミング側にも同じ nested `:has()` があったため、同時に修正した。その後の Firefox 検証で、サイズ指定を当てるべき通常画像の階層は `aria-labelledby` 起点の 4 段目・5 段目であることが確認できたため、実装もこの2つの div に合わせた。
 
 ## 実装メモ: X 翻訳投稿の原文優先表示
 
@@ -766,6 +768,16 @@ DOM 変更や仮想スクロールで投稿が差し替わるため、`MutationO
 Stylus 用 CSS は、有効な CSS ルールを現在のルール順で結合し、`@-moz-document domain(...)` で対象 SNS のドメインへ閉じ込める。X の場合は `x.com` と `twitter.com` を対象にする。アプリ内のプリセットは「土台 CSS で一度非表示にし、ON の項目だけ戻す」構造が多いため、OFF の項目を再現するには hidden な土台ルールも含めた順序付き CSS として書き出す必要がある。
 
 UserScript 用出力は、同じ CSS を `GM_addStyle` で注入し、さらに有効な script ルールを順番に実行する。`GM_addStyle` がない環境では `<style>` を直接挿入する fallback を持たせる。script ルールはアプリ内の Electron 注入と完全に同じ実行環境ではないため、CSP、拡張の sandbox、実行タイミング、対象 DOM の差分によって挙動が変わる可能性がある。この書き出しは一般配布用ではなく、Chrome DevTools で selector や DOM 変化を検証し、アプリ側のプリセットを精錬するための実験用と位置付ける。
+
+## 実装メモ: 詳細 CSS の適用経路
+
+詳細 CSS の Monaco Editor でルール本文を変更しても、当初は `適用` しても表示が変わらなかった。原因は、renderer 側の編集中 `rules` state は更新されていたが、`適用` ボタンが Electron 側へ現在のルールを渡しておらず、`ViewManager.applyRules()` が `loadRules(activeSiteId)` で保存済み JSON を読み直していたこと。つまり、保存前の詳細 CSS は `適用` 対象になっていなかった。
+
+修正後は、`window.snsBrowser.applyRules(rules)` で現在の編集中ルール配列を main process へ渡し、`ViewManager.applyRules(rules?)` が渡されたルールを優先して `RuleRunner` に適用する。これにより、詳細 CSS は保存しなくても `適用` で即時確認できる。ページ遷移や再読み込み時は保存済みルールを読み直すため、検証結果を残したい場合は従来どおり `保存` が必要。
+
+その後、詳細 CSS タブの役割を「既存プリセット CSS の本文編集」から「カスタム CSS 入力」へ変更した。各サイトに `x-custom-css` / `threads-custom-css` / `mixi2-custom-css` の hidden ルールを追加し、Monaco Editor はこのカスタム CSS だけを編集する。カスタム CSS はプリセット群の後に適用されるため、検証中の selector や一時的な上書きを追加しやすい。既存プリセットの本文は UI から直接編集しない。
+
+保存処理では、通常の hidden ルールはデフォルト本文へ戻すが、カスタム CSS ルールだけは例外として保存済み本文を保持する。これにより、アプリ内部の判定 script や土台 CSS は更新時に最新のデフォルトへ追従しつつ、ユーザーが書いたカスタム CSS は失われない。
 
 ## 参考ソース
 

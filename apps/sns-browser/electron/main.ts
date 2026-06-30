@@ -74,7 +74,7 @@ function registerIpcHandlers() {
   ipcMain.handle("browser:goForward", () => getViewManager().goForward());
   ipcMain.handle("browser:reload", () => getViewManager().reload());
   ipcMain.handle("browser:loadHome", () => getViewManager().loadHome());
-  ipcMain.handle("browser:applyRules", () => getViewManager().applyRules());
+  ipcMain.handle("browser:applyRules", (_event, rules?: BrowserRule[]) => getViewManager().applyRules(rules));
   ipcMain.handle("browser:openExternal", (_event, url: string) => shell.openExternal(url));
 }
 

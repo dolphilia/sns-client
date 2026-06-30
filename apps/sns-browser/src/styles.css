@@ -451,6 +451,35 @@ button {
   min-height: 0;
 }
 
+.custom-css-tab {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+
+.custom-css-note {
+  display: grid;
+  gap: 5px;
+  padding: 10px 12px;
+  background: #f4f3ee;
+  border: 1px solid #dfded9;
+  border-radius: 8px;
+}
+
+.custom-css-note strong {
+  color: #24231f;
+  font-size: 13px;
+}
+
+.custom-css-note p {
+  margin: 0;
+  color: #625d55;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .rule-list {
   display: grid;
   align-content: start;

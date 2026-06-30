@@ -105,6 +105,21 @@ export function getDefaultRules(siteId: SiteId): BrowserRule[] {
   return defaultRules.filter((rule) => rule.siteId === siteId);
 }
 
+function customCssRule(siteId: SiteId): BrowserRule {
+  return {
+    id: `${siteId}-custom-css`,
+    siteId,
+    name: "カスタム CSS",
+    description: "詳細 CSS タブで入力する追加 CSS です。プリセットの後に適用されます。",
+    enabled: true,
+    visible: false,
+    type: "css",
+    runAt: "document-end",
+    builtin: true,
+    content: "",
+  };
+}
+
 const xSidebarItems = {
   area: `header[role="banner"]`,
   siteLogo: `a[aria-label="X"][href$="/home"]`,
@@ -1153,8 +1168,8 @@ function showXVisibleMediaPostCss(selector: string) {
 }
 
 function squareCropXImagesCss() {
-  return `article[data-testid="tweet"] div[aria-labelledby]:has([data-sns-browser-single-media-container="true"] [data-sns-browser-kept-media="true"] a[href*="/photo/"]:has([data-testid="tweetPhoto"])),
-article[data-testid="tweet"] [data-sns-browser-single-media-container="true"]:has([data-sns-browser-kept-media="true"] a[href*="/photo/"]:has([data-testid="tweetPhoto"])) {
+  return `article[data-testid="tweet"] div[aria-labelledby]:has([data-sns-browser-single-media-container="true"] [data-sns-browser-kept-media="true"] a[href*="/photo/"] [data-testid="tweetPhoto"]),
+article[data-testid="tweet"] [data-sns-browser-single-media-container="true"]:has([data-sns-browser-kept-media="true"] a[href*="/photo/"] [data-testid="tweetPhoto"]) {
   aspect-ratio: 1 / 1 !important;
   height: auto !important;
   max-height: none !important;
@@ -1162,7 +1177,7 @@ article[data-testid="tweet"] [data-sns-browser-single-media-container="true"]:ha
   width: 100% !important;
 }
 
-article[data-testid="tweet"] div[aria-labelledby]:has([data-sns-browser-single-media-container="true"] [data-sns-browser-kept-media="true"] a[href*="/photo/"]:has([data-testid="tweetPhoto"])) > div,
+article[data-testid="tweet"] div[aria-labelledby]:has([data-sns-browser-single-media-container="true"] [data-sns-browser-kept-media="true"] a[href*="/photo/"] [data-testid="tweetPhoto"]) > div,
 article[data-testid="tweet"] [data-sns-browser-single-media-container="true"] > div,
 article[data-testid="tweet"] [data-sns-browser-single-media-path="true"] {
   display: block !important;
@@ -1174,7 +1189,7 @@ article[data-testid="tweet"] [data-sns-browser-single-media-path="true"] {
   width: 100% !important;
 }
 
-article[data-testid="tweet"] [data-sns-browser-kept-media="true"]:has(a[href*="/photo/"]:has([data-testid="tweetPhoto"])) {
+article[data-testid="tweet"] [data-sns-browser-kept-media="true"]:has(a[href*="/photo/"] [data-testid="tweetPhoto"]) {
   aspect-ratio: 1 / 1 !important;
   display: block !important;
   height: 100% !important;
@@ -1226,13 +1241,13 @@ function smallSquareXImagesCss() {
   --sns-browser-small-square-media-size: 96px;
 }
 
-article[data-testid="tweet"] div[aria-labelledby]:has(a[href*="/photo/"]:has([data-testid="tweetPhoto"])):not(:has([data-testid="videoPlayer"])) {
+article[data-testid="tweet"] div[aria-labelledby]:has(a[href*="/photo/"] [data-testid="tweetPhoto"]):not(:has([data-testid="videoPlayer"])) {
   width: var(--sns-browser-small-square-media-size) !important;
   max-width: var(--sns-browser-small-square-media-size) !important;
 }
 
-article[data-testid="tweet"] div[aria-labelledby]:has(a[href*="/photo/"]:has([data-testid="tweetPhoto"])):not(:has([data-testid="videoPlayer"])) > div > div > div > div,
-article[data-testid="tweet"] div[aria-labelledby]:has(a[href*="/photo/"]:has([data-testid="tweetPhoto"])):not(:has([data-testid="videoPlayer"])) > div > div > div > div > div,
+article[data-testid="tweet"] div[aria-labelledby]:has(a[href*="/photo/"] [data-testid="tweetPhoto"]):not(:has([data-testid="videoPlayer"])) > div > div > div > div,
+article[data-testid="tweet"] div[aria-labelledby]:has(a[href*="/photo/"] [data-testid="tweetPhoto"]):not(:has([data-testid="videoPlayer"])) > div > div > div > div > div,
 article[data-testid="tweet"] div:has(> [data-sns-browser-single-media-container="true"]),
 article[data-testid="tweet"] div:has(> div > [data-sns-browser-single-media-container="true"]) {
   aspect-ratio: 1 / 1 !important;
@@ -1249,7 +1264,7 @@ article[data-testid="tweet"] div:has(> div > [data-sns-browser-single-media-cont
 
 article[data-testid="tweet"] [data-sns-browser-single-media-container="true"],
 article[data-testid="tweet"] [data-sns-browser-single-media-path="true"],
-article[data-testid="tweet"] [data-sns-browser-kept-media="true"]:has(a[href*="/photo/"]:has([data-testid="tweetPhoto"])),
+article[data-testid="tweet"] [data-sns-browser-kept-media="true"]:has(a[href*="/photo/"] [data-testid="tweetPhoto"]),
 article[data-testid="tweet"] a[href*="/photo/"]:has([data-testid="tweetPhoto"]):not(:has([data-testid="videoPlayer"])),
 article[data-testid="tweet"] a[href*="/photo/"]:has([data-testid="tweetPhoto"]):not(:has([data-testid="videoPlayer"])) > div,
 article[data-testid="tweet"] a[href*="/photo/"]:has([data-testid="tweetPhoto"]):not(:has([data-testid="videoPlayer"])) [data-testid="tweetPhoto"] {
@@ -1883,6 +1898,7 @@ article [role="group"] span:not(:empty)::after {
     builtin: true,
     content: xPreferOriginalTranslationScript,
   },
+  customCssRule("x"),
   {
     id: "threads-calm-layout",
     siteId: "threads",
@@ -1928,6 +1944,7 @@ svg + span {
 }
 `.trim(),
   },
+  customCssRule("threads"),
   {
     id: "mixi2-calm-layout",
     siteId: "mixi2",
@@ -1969,4 +1986,5 @@ video {
 }
 `.trim(),
   },
+  customCssRule("mixi2"),
 ];

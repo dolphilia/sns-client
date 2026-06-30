@@ -19,7 +19,7 @@ contextBridge.exposeInMainWorld("snsBrowser", {
   goForward: () => ipcRenderer.invoke("browser:goForward") as Promise<void>,
   reload: () => ipcRenderer.invoke("browser:reload") as Promise<void>,
   loadHome: () => ipcRenderer.invoke("browser:loadHome") as Promise<void>,
-  applyRules: () => ipcRenderer.invoke("browser:applyRules") as Promise<void>,
+  applyRules: (rules?: BrowserRule[]) => ipcRenderer.invoke("browser:applyRules", rules) as Promise<void>,
   openExternal: (url: string) => ipcRenderer.invoke("browser:openExternal", url) as Promise<void>,
   onBrowserStateChanged: (listener: (state: BrowserState) => void) => {
     const wrapped = (_event: Electron.IpcRendererEvent, state: BrowserState) => listener(state);
