@@ -554,6 +554,8 @@ Chrome 拡張は Manifest V3 前提になる。`chrome.scripting` は JS/CSS 注
 
 このプリセットも左サイドバーと同じく、内部の土台 CSS で対象をいったん非表示にし、項目別の表示ルールを ON にしたものだけ戻す方式にした。投稿本文やメディアは元の X 側 CSS の display 値が要素ごとに異なるため、表示側は `display: revert !important` を使う。
 
+アバターアイコンは、アイコン本体の `[data-testid="Tweet-User-Avatar"]` だけを非表示にすると、投稿左側のカラム幅が空白として残る。そのため、`タイムライン投稿: アバターアイコン` は `article[data-testid="tweet"] div:has(> [data-testid="Tweet-User-Avatar"])` を対象にし、アバターを直下に持つ親 div、つまり左カラムごと ON/OFF する。保存 HTML では、この親 div が `r-onrtq4` などの幅を持つ投稿左カラムだった。
+
 当初は `タイムライン投稿: 画像・メディア` として画像、動画、カード、カルーセルをまとめていたが、保存 HTML 上で安定して判別できる要素は個別制御へ分割した。現在は `画像`、`動画`、`外部リンクカード`、`カルーセル` をそれぞれ ON/OFF できる。GIF は投稿内で安定した専用 testid が未確認のため、現時点では個別項目にしない。
 
 画像・動画の制御は、子要素の `tweetPhoto` や `videoPlayer` だけを消すと枠や空白が残るため、外側の `aria-labelledby` 付きメディア枠や `max-width` 付きメディア枠を主対象にする。画像側は `videoPlayer` と `card.wrapper` を含む枠を除外し、動画・カード内メディアを巻き込まないようにする。動画側は `videoPlayer` を含む外側枠を消し、動画を OFF にしたときに透明なプレイヤー枠だけが残らないようにする。
@@ -750,6 +752,12 @@ DOM 変更や仮想スクロールで投稿が差し替わるため、`MutationO
 `実験的機能: 画像を小さな正方形で表示` も追加した。初期状態は OFF。ON にすると、タイムライン内の通常画像を `--sns-browser-small-square-media-size: 96px` の小さな正方形として表示する。Firefox 上でユーザースクリプトを検証した結果、X の通常画像では `aria-labelledby` を持つメディア枠から `div > div > div > div` と、その子の `div > div > div > div > div` に同じ `width` / `height` を当てると、画像枠が小さな正方形として安定しやすいことが分かったため、この階層を明示的に対象にする。
 
 複数メディアを1枚表示にした場合は、`data-sns-browser-single-media-container="true"` を持つ div の親と祖父母に相当する `div:has(> [data-sns-browser-single-media-container="true"])` / `div:has(> div > [data-sns-browser-single-media-container="true"])` にも同じ正方形サイズを当てる。これにより、単に画像リンクだけを縮めて外側のメディア枠や余白が残る状態を避ける。`画像を正方形にトリミング` と同時に ON にした場合は、後に定義される `画像を小さな正方形で表示` の 96px 指定が優先される。
+
+小さな正方形のサイズは `x-experimental-small-square-image-size` という hidden CSS ルールへ分離した。内容は `:root { --sns-browser-small-square-media-size: Npx; }` だけで、UI の `正方形画像サイズ` 数値入力から 24px から 640px の範囲で変更できる。サイズルールは小さな正方形表示本体より前に適用し、本体側は CSS 変数を参照する。これにより、本体 selector はデフォルト更新へ追従しつつ、ユーザーが指定したサイズだけを保存できる。
+
+`実験的機能: 小さな正方形画像を中央揃え` も追加した。初期状態は OFF。ON にすると、小さな正方形サイズを指定している同じ div 群へ `margin: 0 auto !important` を追加する。小さな正方形表示そのものとは分離しているため、左寄せの小型画像と中央揃えの小型画像を切り替えて検証できる。
+
+中央揃えが効かないケースを調査したところ、小さな正方形表示の本体 CSS が内側の 4 段目・5 段目だけでなく、起点の `div[aria-labelledby]` 自体も小さな幅にしていた。そのため、内側 div だけに `margin: 0 auto` を指定しても、外側の起点 div が左側に残り、見た目が中央へ移動しなかった。修正後は起点の `div[aria-labelledby]` も中央揃え対象に含め、X 側の flex 配置に対して `align-self: center !important` も併用する。
 
 調査で、小さな正方形表示が効かない原因の1つは、`div:has(a[href*="/photo/"]:has([data-testid="tweetPhoto"]))` のように `:has()` を入れ子にしていたことだった。Chrome の CSS selector では nested `:has()` は無効になりやすいため、`div:has(a[href*="/photo/"] [data-testid="tweetPhoto"])` のように子孫条件へ置き換えた。大きい正方形トリミング側にも同じ nested `:has()` があったため、同時に修正した。その後の Firefox 検証で、サイズ指定を当てるべき通常画像の階層は `aria-labelledby` 起点の 4 段目・5 段目であることが確認できたため、実装もこの2つの div に合わせた。
 

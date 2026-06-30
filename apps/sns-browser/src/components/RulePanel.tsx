@@ -45,8 +45,21 @@ const exportTargets: Record<SiteId, ExportTarget> = {
   },
 };
 
+const smallSquareImageSizeRuleId = "x-experimental-small-square-image-size";
+
 function commentBlock(rule: BrowserRule) {
   return `/* ${rule.name} (${rule.id}) */`;
+}
+
+function buildSmallSquareImageSizeCss(size: number) {
+  return `:root {
+  --sns-browser-small-square-media-size: ${size}px;
+}`;
+}
+
+function getSmallSquareImageSize(content: string) {
+  const match = content.match(/--sns-browser-small-square-media-size:\s*(\d+(?:\.\d+)?)px/);
+  return match ? Number(match[1]) : 96;
 }
 
 function buildStylusCss(rules: BrowserRule[]) {
@@ -153,6 +166,11 @@ export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: Rule
     () => rules.find((rule) => rule.id === `${activeSiteId}-custom-css`) ?? null,
     [activeSiteId, rules],
   );
+  const smallSquareImageSizeRule = useMemo(
+    () => rules.find((rule) => rule.id === smallSquareImageSizeRuleId) ?? null,
+    [rules],
+  );
+  const smallSquareImageSize = smallSquareImageSizeRule ? getSmallSquareImageSize(smallSquareImageSizeRule.content) : 96;
   const stylusCss = useMemo(() => buildStylusCss(rules), [rules]);
   const userScript = useMemo(() => buildUserScript(rules), [rules]);
   const sidebarRules = useMemo(() => presetRules.filter((rule) => rule.name.startsWith("左サイドバー:")), [presetRules]);
@@ -244,6 +262,19 @@ export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: Rule
     );
   }
 
+  function updateSmallSquareImageSize(size: number) {
+    if (!smallSquareImageSizeRule) return;
+    const safeSize = Math.min(Math.max(Math.round(size), 24), 640);
+    updateRule(
+      smallSquareImageSizeRule.id,
+      {
+        content: buildSmallSquareImageSizeCss(safeSize),
+        enabled: true,
+      },
+      { persist: true },
+    );
+  }
+
   return (
     <aside className="rule-panel">
       <div className="panel-header">
@@ -321,6 +352,23 @@ export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: Rule
               <section className="preset-section">
                 <h3>実験的機能</h3>
                 <div className="preset-grid">{experimentalRules.map(renderPresetRule)}</div>
+                {smallSquareImageSizeRule ? (
+                  <label className="numeric-setting">
+                    <span>
+                      <strong>正方形画像サイズ</strong>
+                      <small>画像を小さな正方形で表示する時の一辺</small>
+                    </span>
+                    <input
+                      type="number"
+                      min={24}
+                      max={640}
+                      step={4}
+                      value={smallSquareImageSize}
+                      onChange={(event) => updateSmallSquareImageSize(Number(event.target.value))}
+                    />
+                    <em>px</em>
+                  </label>
+                ) : null}
               </section>
             ) : null}
           </div>

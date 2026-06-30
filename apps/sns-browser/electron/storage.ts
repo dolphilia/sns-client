@@ -43,9 +43,11 @@ const useDefaultContentRuleIds = new Set([
   "x-experimental-show-first-visible-media-only",
   "x-experimental-square-crop-images",
   "x-experimental-small-square-images",
+  "x-experimental-center-small-square-images",
   "x-experimental-image-gallery-view",
   "x-experimental-prefer-original-translation",
   "x-timeline-media-description-extra-marker",
+  "x-timeline-show-avatar",
   "x-timeline-show-embedded-post",
   "x-timeline-show-image",
   "x-timeline-show-video",
@@ -57,6 +59,7 @@ const useDefaultContentRuleIds = new Set([
   "x-timeline-show-verification-badge",
 ]);
 const customCssRuleIds = new Set(["x-custom-css", "threads-custom-css", "mixi2-custom-css"]);
+const userContentRuleIds = new Set([...customCssRuleIds, "x-experimental-small-square-image-size"]);
 
 function getStorageDir() {
   return path.join(app.getPath("userData"), storageDirName);
@@ -123,7 +126,7 @@ export async function loadRules(siteId: SiteId): Promise<BrowserRule[]> {
         builtin: defaultRule.builtin,
         visible: defaultRule.visible,
         content:
-          (defaultRule.visible === false && !customCssRuleIds.has(defaultRule.id)) ||
+          (defaultRule.visible === false && !userContentRuleIds.has(defaultRule.id)) ||
           useDefaultContentRuleIds.has(defaultRule.id)
             ? defaultRule.content
             : savedRule.content,

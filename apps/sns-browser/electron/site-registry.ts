@@ -60,6 +60,7 @@ export const siteDefinitions: Record<SiteId, SiteDefinition> = {
       "x-experimental-show-first-visible-media-only",
       "x-experimental-square-crop-images",
       "x-experimental-small-square-images",
+      "x-experimental-center-small-square-images",
       "x-experimental-image-gallery-view",
       "x-experimental-prefer-original-translation",
     ],
@@ -153,7 +154,7 @@ a[aria-label="ポストする"]`,
 } as const;
 
 const xTimelineItems = {
-  avatar: `article[data-testid="tweet"] [data-testid="Tweet-User-Avatar"]`,
+  avatar: `article[data-testid="tweet"] div:has(> [data-testid="Tweet-User-Avatar"])`,
   displayName: `article[data-testid="tweet"] [data-testid="User-Name"] a:not([tabindex="-1"]):not(:has(time))`,
   verificationBadge: `article[data-testid="tweet"] [data-testid="User-Name"] div[dir="ltr"][class~="r-xoduu5"][class~="r-18u37iz"]:has([data-testid="icon-verified"]),
 article[data-testid="tweet"] [data-testid="User-Name"] div[dir="ltr"][class~="r-xoduu5"][class~="r-18u37iz"]:has([aria-label="認証済みアカウント"]),
@@ -1237,11 +1238,7 @@ article[data-testid="tweet"] a[href*="/photo/"]:has([data-testid="tweetPhoto"]):
 }
 
 function smallSquareXImagesCss() {
-  return `:root {
-  --sns-browser-small-square-media-size: 96px;
-}
-
-article[data-testid="tweet"] div[aria-labelledby]:has(a[href*="/photo/"] [data-testid="tweetPhoto"]):not(:has([data-testid="videoPlayer"])) {
+  return `article[data-testid="tweet"] div[aria-labelledby]:has(a[href*="/photo/"] [data-testid="tweetPhoto"]):not(:has([data-testid="videoPlayer"])) {
   width: var(--sns-browser-small-square-media-size) !important;
   max-width: var(--sns-browser-small-square-media-size) !important;
 }
@@ -1289,6 +1286,17 @@ article[data-testid="tweet"] a[href*="/photo/"]:has([data-testid="tweetPhoto"]):
   object-fit: cover !important;
   background-position: center !important;
   background-size: cover !important;
+}`;
+}
+
+function centerSmallSquareXImagesCss() {
+  return `article[data-testid="tweet"] div[aria-labelledby]:has(a[href*="/photo/"] [data-testid="tweetPhoto"]):not(:has([data-testid="videoPlayer"])),
+article[data-testid="tweet"] div[aria-labelledby]:has(a[href*="/photo/"] [data-testid="tweetPhoto"]):not(:has([data-testid="videoPlayer"])) > div > div > div > div,
+article[data-testid="tweet"] div[aria-labelledby]:has(a[href*="/photo/"] [data-testid="tweetPhoto"]):not(:has([data-testid="videoPlayer"])) > div > div > div > div > div,
+article[data-testid="tweet"] div:has(> [data-sns-browser-single-media-container="true"]),
+article[data-testid="tweet"] div:has(> div > [data-sns-browser-single-media-container="true"]) {
+  align-self: center !important;
+  margin: 0 auto !important;
 }`;
 }
 
@@ -1863,6 +1871,20 @@ article [role="group"] span:not(:empty)::after {
     content: squareCropXImagesCss(),
   },
   {
+    id: "x-experimental-small-square-image-size",
+    siteId: "x",
+    name: "実験的機能: 小さな正方形画像サイズ",
+    description: "小さな正方形画像のサイズ指定です。",
+    enabled: true,
+    visible: false,
+    type: "css",
+    runAt: "document-end",
+    builtin: true,
+    content: `:root {
+  --sns-browser-small-square-media-size: 96px;
+}`,
+  },
+  {
     id: "x-experimental-small-square-images",
     siteId: "x",
     name: "実験的機能: 画像を小さな正方形で表示",
@@ -1873,6 +1895,18 @@ article [role="group"] span:not(:empty)::after {
     runAt: "document-end",
     builtin: true,
     content: smallSquareXImagesCss(),
+  },
+  {
+    id: "x-experimental-center-small-square-images",
+    siteId: "x",
+    name: "実験的機能: 小さな正方形画像を中央揃え",
+    description:
+      "小さな正方形で表示したタイムライン画像を中央揃えにします。画像を小さな正方形で表示する機能と併用してください。",
+    enabled: false,
+    type: "css",
+    runAt: "document-end",
+    builtin: true,
+    content: centerSmallSquareXImagesCss(),
   },
   {
     id: "x-experimental-image-gallery-view",
