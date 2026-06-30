@@ -6,52 +6,14 @@ import { Button } from "@/components/ui/button";
 import { BookmarkButton } from "@/components/post/BookmarkButton";
 import { useLike } from "@/hooks/usePostActions";
 import { useSettingsStore } from "@/stores/settingsStore";
-import type {
-  AppBskyEmbedImages,
-  AppBskyEmbedRecordWithMedia,
-  AppBskyFeedDefs,
-  AppBskyFeedPost,
-} from "@atproto/api";
+import { getFirstImage } from "@/lib/postEmbeds";
+import type { AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api";
 import { useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 
 interface Props {
   item: AppBskyFeedDefs.FeedViewPost;
   headerAction?: React.ReactNode;
-}
-
-type PostEmbed = NonNullable<AppBskyFeedDefs.PostView["embed"]>;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function isImagesView(embed: unknown): embed is AppBskyEmbedImages.View {
-  return (
-    isRecord(embed) &&
-    embed.$type === "app.bsky.embed.images#view" &&
-    Array.isArray(embed.images)
-  );
-}
-
-function isRecordWithMediaView(embed: unknown): embed is AppBskyEmbedRecordWithMedia.View {
-  return (
-    isRecord(embed) &&
-    embed.$type === "app.bsky.embed.recordWithMedia#view" &&
-    isRecord(embed.media)
-  );
-}
-
-function getFirstImage(embed: PostEmbed | undefined): AppBskyEmbedImages.ViewImage | null {
-  if (isImagesView(embed)) {
-    return embed.images[0] ?? null;
-  }
-
-  if (isRecordWithMediaView(embed) && isImagesView(embed.media)) {
-    return embed.media.images[0] ?? null;
-  }
-
-  return null;
 }
 
 // 投稿カード内では AI 判定を行わず、通常の SNS 操作を最小限に絞る。

@@ -21,8 +21,11 @@ Electron + React + Vite による Bluesky 向けデスクトップ SNS クライ
 npm run dev
 npm run electron:dev
 npm run build
+npm run package:mac
 npm run routes:gen
 ```
+
+配布用ビルドの詳細はリポジトリルートの `docs/guides/desktop-distribution.md` を参照してください。
 
 ## 保存場所
 
@@ -35,3 +38,7 @@ Electron 実行時は、通常のローカルデータを Electron の `userData
 認証セッションは `safeStorage` で暗号化し、`userData/secure-store/bsky-session.json` に保存します。
 
 ブラウザで `npm run dev` する場合は、Electron の保存 API が使えないため localStorage にフォールバックします。
+
+## 配布ビルド時の注意
+
+Electron の配布版は `file://` で `dist/index.html` を読み込みます。そのため Vite は `base: "./"` に設定しています。これを外すと、配布版で JS / CSS が `/assets/...` として解決され、白画面になります。

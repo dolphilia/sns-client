@@ -10,6 +10,7 @@ export const DISCOVER_FEED_URI =
 
 export interface FeedSettings {
   includeReposts: boolean;
+  onlyImagePosts: boolean;
   feedSource: FeedSource;
   customFeedUri: string;
   customFeedUris: string[];
@@ -64,6 +65,7 @@ interface SettingsState {
 
 const defaultFeedSettings: FeedSettings = {
   includeReposts: false,
+  onlyImagePosts: false,
   feedSource: "following",
   customFeedUri: "",
   customFeedUris: [],

@@ -165,6 +165,21 @@ function SettingsPage() {
 
             <label className="flex items-center justify-between gap-4 cursor-pointer">
               <div>
+                <p className="text-sm font-medium">画像付きの投稿のみ表示</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  オンにするとホームのタイムラインで画像を含む投稿だけを表示します
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={feedSettings.onlyImagePosts}
+                onChange={(e) => setFeedSettings({ onlyImagePosts: e.target.checked })}
+                className="w-4 h-4 accent-primary"
+              />
+            </label>
+
+            <label className="flex items-center justify-between gap-4 cursor-pointer">
+              <div>
                 <p className="text-sm font-medium">フォロー解除後の再フォローを防止</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   フォロー解除したユーザーをこの端末に記録し、再フォロー用ボタンを無効にします

@@ -3,6 +3,7 @@ import { agent } from "@/lib/agent";
 import { DISCOVER_FEED_URI, useSettingsStore } from "@/stores/settingsStore";
 import { applyKeywordFilter } from "@/lib/filters/keywordFilter";
 import { normalizeFeedUri } from "@/lib/bskyFeed";
+import { hasPostImage } from "@/lib/postEmbeds";
 
 const PAGE_SIZE = 30;
 
@@ -19,6 +20,7 @@ export function useTimeline() {
         customFeedUri,
         selectedCustomFeedUri,
         includeReposts,
+        onlyImagePosts,
       } = feedSettings;
       const normalizedCustomFeedUri = normalizeFeedUri(
         selectedCustomFeedUri || customFeedUri
@@ -38,6 +40,10 @@ export function useTimeline() {
 
       const feed = res.data.feed.filter((item) => {
         if (!includeReposts && item.reason?.$type === "app.bsky.feed.defs#reasonRepost") {
+          return false;
+        }
+
+        if (onlyImagePosts && !hasPostImage(item.post)) {
           return false;
         }
 

@@ -59,6 +59,7 @@ Developer ID 署名・公証をしていないため、環境によっては mac
 - 自動アップデートは未実装。
 - Windows / Linux の配布成果物は未整備。
 - Electron の `userData` 保存先はアプリ名に基づくため、配布アプリでは `SNS Client` の保存領域を使う。
+- 配布版は `file://` で `dist/index.html` を読むため、Vite の `base` は `./` にする。`/assets/...` の絶対パスになると配布版が白画面になる。
 
 ## 将来の正式配布で追加すること
 
