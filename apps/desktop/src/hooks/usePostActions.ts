@@ -17,6 +17,8 @@ const postQueryRoots = new Set([
   "thread",
 ]);
 
+const removeValue = Symbol("removeValue");
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -71,6 +73,61 @@ function updatePostLikeValue<T>(value: T, uri: string, liked: boolean, likeUri?:
   return visit(value) as T;
 }
 
+function isPostByActorTarget(value: Record<string, unknown>, actorDid: string) {
+  const post = value.post;
+  if (!isRecord(post)) return false;
+
+  const author = post.author;
+  return isRecord(author) && author.did === actorDid;
+}
+
+function removeActorPostsValue<T>(value: T, actorDid: string): T {
+  function visit(current: unknown): unknown {
+    if (Array.isArray(current)) {
+      let changed = false;
+      const next: unknown[] = [];
+
+      for (const item of current) {
+        const updated = visit(item);
+        if (updated === removeValue) {
+          changed = true;
+          continue;
+        }
+        if (updated !== item) changed = true;
+        next.push(updated);
+      }
+
+      return changed ? next : current;
+    }
+
+    if (!isRecord(current)) return current;
+
+    if (isPostByActorTarget(current, actorDid)) {
+      return removeValue;
+    }
+
+    let changed = false;
+    const next: Record<string, unknown> = { ...current };
+    for (const [key, nested] of Object.entries(current)) {
+      const updated = visit(nested);
+      if (updated === removeValue) {
+        delete next[key];
+        changed = true;
+        continue;
+      }
+      if (updated !== nested) {
+        next[key] = updated;
+        changed = true;
+      }
+    }
+
+    return changed ? next : current;
+  }
+
+  const updated = visit(value);
+  return (updated === removeValue ? value : updated) as T;
+}
+
 function isPostQuery(queryKey: QueryKey) {
   return postQueryRoots.has(String(queryKey[0]));
 }
@@ -101,6 +158,17 @@ function updateLikeAcrossPostQueries(
     .forEach((query) => {
       queryClient.setQueryData(query.queryKey, (old) =>
         old == null ? old : updatePostLikeValue(old, uri, liked, likeUri)
+      );
+    });
+}
+
+function removeActorPostsAcrossPostQueries(queryClient: QueryClient, actorDid: string) {
+  queryClient
+    .getQueryCache()
+    .findAll({ predicate: (query) => isPostQuery(query.queryKey) })
+    .forEach((query) => {
+      queryClient.setQueryData(query.queryKey, (old) =>
+        old == null ? old : removeActorPostsValue(old, actorDid)
       );
     });
 }
@@ -166,6 +234,23 @@ export function useLike() {
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: ["my-likes"],
+        refetchType: "none",
+      });
+    },
+  });
+}
+
+export function useMuteActor() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ actorDid }: { actorDid: string }) => {
+      await agent.mute(actorDid);
+    },
+    onSuccess: (_result, vars) => {
+      removeActorPostsAcrossPostQueries(queryClient, vars.actorDid);
+      queryClient.invalidateQueries({
+        queryKey: ["profile"],
         refetchType: "none",
       });
     },

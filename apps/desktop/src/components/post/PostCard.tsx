@@ -4,6 +4,7 @@ import { Heart } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { BookmarkButton } from "@/components/post/BookmarkButton";
+import { MuteActorButton } from "@/components/post/MuteActorButton";
 import { useLike } from "@/hooks/usePostActions";
 import { useSettingsStore } from "@/stores/settingsStore";
 import { getFirstImage } from "@/lib/postEmbeds";
@@ -123,29 +124,35 @@ export function PostCard({ item, headerAction }: Props) {
             </div>
           )}
 
-          {/* アクションバー：いいね + ブックマークのみ */}
+          {/* アクションバー：通知が重い操作は控えめに配置する。 */}
           {display.showActions && (
-          <div className="flex items-center gap-1 mt-2 -ml-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                "h-8 gap-1.5 hover:bg-red-50",
-                liked
-                  ? "text-red-500"
-                  : "text-muted-foreground hover:text-red-500"
-              )}
-              onClick={handleLike}
-              disabled={likeMutation.isPending}
-            >
-              <Heart size={16} className={liked ? "fill-current" : ""} />
-              {!hideEngagementCounts && post.likeCount != null && (
-                <span className="text-xs">{post.likeCount}</span>
-              )}
-            </Button>
+            <div className="flex items-center gap-1 mt-2 -ml-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "h-8 gap-1.5 hover:bg-red-50",
+                  liked
+                    ? "text-red-500"
+                    : "text-muted-foreground hover:text-red-500"
+                )}
+                onClick={handleLike}
+                disabled={likeMutation.isPending}
+              >
+                <Heart size={16} className={liked ? "fill-current" : ""} />
+                {!hideEngagementCounts && post.likeCount != null && (
+                  <span className="text-xs">{post.likeCount}</span>
+                )}
+              </Button>
 
-            <BookmarkButton uri={post.uri} />
-          </div>
+              <BookmarkButton uri={post.uri} />
+
+              {display.showMuteAction && (
+                <div className="ml-auto">
+                  <MuteActorButton actor={author} />
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>

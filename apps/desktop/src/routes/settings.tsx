@@ -167,13 +167,43 @@ function SettingsPage() {
               <div>
                 <p className="text-sm font-medium">画像付きの投稿のみ表示</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  オンにするとホームのタイムラインで画像を含む投稿だけを表示します
+                  オンにするとホームと発見で画像を含む投稿だけを表示します
                 </p>
               </div>
               <input
                 type="checkbox"
                 checked={feedSettings.onlyImagePosts}
                 onChange={(e) => setFeedSettings({ onlyImagePosts: e.target.checked })}
+                className="w-4 h-4 accent-primary"
+              />
+            </label>
+
+            <label className="flex items-center justify-between gap-4 cursor-pointer">
+              <div>
+                <p className="text-sm font-medium">NSFW 投稿を除外する</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  オンにするとホームと発見で NSFW 系ラベルのある投稿を表示しません
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={feedSettings.excludeNsfwPosts}
+                onChange={(e) => setFeedSettings({ excludeNsfwPosts: e.target.checked })}
+                className="w-4 h-4 accent-primary"
+              />
+            </label>
+
+            <label className="flex items-center justify-between gap-4 cursor-pointer">
+              <div>
+                <p className="text-sm font-medium">投稿カードにミュートボタンを表示</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  オンにすると各投稿の右下に確認付きのミュート操作を表示します
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={feedDisplaySettings.showMuteAction}
+                onChange={(e) => setFeedDisplaySettings({ showMuteAction: e.target.checked })}
                 className="w-4 h-4 accent-primary"
               />
             </label>

@@ -11,6 +11,7 @@ export const DISCOVER_FEED_URI =
 export interface FeedSettings {
   excludeReposts: boolean;
   onlyImagePosts: boolean;
+  excludeNsfwPosts: boolean;
   feedSource: FeedSource;
   customFeedUri: string;
   customFeedUris: string[];
@@ -35,6 +36,7 @@ export interface FeedDisplaySettings {
   showImages: boolean;
   cropImagesToSquare: boolean;
   showActions: boolean;
+  showMuteAction: boolean;
 }
 
 export interface FollowSafetySettings {
@@ -66,6 +68,7 @@ interface SettingsState {
 const defaultFeedSettings: FeedSettings = {
   excludeReposts: true,
   onlyImagePosts: false,
+  excludeNsfwPosts: true,
   feedSource: "following",
   customFeedUri: "",
   customFeedUris: [],
@@ -90,6 +93,7 @@ const defaultFeedDisplaySettings: FeedDisplaySettings = {
   showImages: true,
   cropImagesToSquare: false,
   showActions: true,
+  showMuteAction: true,
 };
 
 const defaultFollowSafetySettings: FollowSafetySettings = {

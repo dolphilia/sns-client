@@ -2,6 +2,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { agent } from "@/lib/agent";
 import { DISCOVER_FEED_URI, useSettingsStore } from "@/stores/settingsStore";
 import { applyKeywordFilter } from "@/lib/filters/keywordFilter";
+import { isNsfwPost } from "@/lib/filters/nsfwFilter";
 import { normalizeFeedUri } from "@/lib/bskyFeed";
 import { hasPostImage } from "@/lib/postEmbeds";
 
@@ -21,6 +22,7 @@ export function useTimeline() {
         selectedCustomFeedUri,
         excludeReposts,
         onlyImagePosts,
+        excludeNsfwPosts,
       } = feedSettings;
       const normalizedCustomFeedUri = normalizeFeedUri(
         selectedCustomFeedUri || customFeedUri
@@ -44,6 +46,10 @@ export function useTimeline() {
         }
 
         if (onlyImagePosts && !hasPostImage(item.post)) {
+          return false;
+        }
+
+        if (excludeNsfwPosts && isNsfwPost(item.post)) {
           return false;
         }
 

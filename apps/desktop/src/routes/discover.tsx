@@ -11,6 +11,8 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { agent } from "@/lib/agent";
 import { normalizeFeedUri } from "@/lib/bskyFeed";
 import { applyKeywordFilter } from "@/lib/filters/keywordFilter";
+import { isNsfwPost } from "@/lib/filters/nsfwFilter";
+import { hasPostImage } from "@/lib/postEmbeds";
 import type { AppBskyFeedDefs, AppBskyFeedPost } from "@atproto/api";
 
 const PAGE_SIZE = 30;
@@ -25,7 +27,9 @@ function getPostText(item: AppBskyFeedDefs.FeedViewPost) {
 function filterDiscoverFeed(
   feed: AppBskyFeedDefs.FeedViewPost[],
   sessionDid: string,
-  mutedKeywords: string[]
+  mutedKeywords: string[],
+  onlyImagePosts: boolean,
+  excludeNsfwPosts: boolean
 ) {
   const seenPostUris = new Set<string>();
   const authorCounts = new Map<string, number>();
@@ -39,6 +43,8 @@ function filterDiscoverFeed(
 
     if (authorDid === sessionDid) return false;
     if (post.author.viewer?.following) return false;
+    if (onlyImagePosts && !hasPostImage(post)) return false;
+    if (excludeNsfwPosts && isNsfwPost(post)) return false;
 
     const text = getPostText(item);
     if (applyKeywordFilter(text, mutedKeywords).filtered) return false;
@@ -57,6 +63,8 @@ function DiscoverPage() {
 
   const navigate = useNavigate();
   const discoverSettings = useSettingsStore((s) => s.discoverSettings);
+  const onlyImagePosts = useSettingsStore((s) => s.feedSettings.onlyImagePosts);
+  const excludeNsfwPosts = useSettingsStore((s) => s.feedSettings.excludeNsfwPosts);
   const mutedKeywords = useSettingsStore((s) => s.mutedKeywords);
   const scrollRootRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -75,7 +83,14 @@ function DiscoverPage() {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["discover", session.did, feedUri, mutedKeywords],
+    queryKey: [
+      "discover",
+      session.did,
+      feedUri,
+      mutedKeywords,
+      onlyImagePosts,
+      excludeNsfwPosts,
+    ],
     queryFn: async ({ pageParam }) => {
       const res = await agent.app.bsky.feed.getFeed({
         feed: feedUri,
@@ -84,7 +99,13 @@ function DiscoverPage() {
       });
 
       return {
-        feed: filterDiscoverFeed(res.data.feed, session.did, mutedKeywords),
+        feed: filterDiscoverFeed(
+          res.data.feed,
+          session.did,
+          mutedKeywords,
+          onlyImagePosts,
+          excludeNsfwPosts
+        ),
         cursor: res.data.cursor,
       };
     },
