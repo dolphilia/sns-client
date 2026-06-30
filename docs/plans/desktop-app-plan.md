@@ -324,6 +324,16 @@ Linux では Electron の `safeStorage.getSelectedStorageBackend()` が `basic_t
 - [ ] Electron アプリとして昇格後の起動確認
 - [ ] 配布設定を検討する
 
+### Phase 7: macOS 配布ビルド
+
+- [x] macOS 向け手動パッケージング方針を決める
+- [x] `npm run package:mac` を追加する
+- [x] `.app` / `.zip` / `.dmg` を生成するスクリプトを追加する
+- [x] 配布手順書を追加する
+- [ ] 署名・公証の方針を決める
+- [ ] アプリアイコンを設定する
+- [ ] Windows / Linux 向け配布方式を検討する
+
 ---
 
 ## 完成の定義

@@ -11,6 +11,7 @@ cd apps/desktop
 npm run dev
 npm run electron:dev
 npm run build
+npm run package:mac
 ```
 
 ## ディレクトリ
@@ -19,6 +20,8 @@ npm run build
 - `prototypes/` - 過去のプロトタイプ
 - `docs/` - リサーチメモ、仕様、計画
 - `research/` - 調査用データ、ノートブック、分析スクリプト
+
+配布用ビルドの手順は [docs/guides/desktop-distribution.md](docs/guides/desktop-distribution.md) を参照してください。
 
 ## 方針
 
