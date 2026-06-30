@@ -24,11 +24,12 @@ function ProfilePage() {
   const posts = feedData?.data.feed ?? [];
 
   return (
-    <div className="flex flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur border-b border-border px-4 py-3">
         <h1 className="font-semibold text-base">プロフィール</h1>
       </header>
 
+      <div className="min-h-0 flex-1 overflow-y-auto">
       {/* バナー */}
       <div className="h-32 bg-muted">
         {profile?.banner && (
@@ -68,6 +69,7 @@ function ProfilePage() {
           ))}
         </FeedPosts>
       </FeedContent>
+      </div>
     </div>
   );
 }

@@ -122,11 +122,12 @@ function SettingsPage() {
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur border-b border-border px-4 py-3">
         <h1 className="font-semibold text-base">設定</h1>
       </header>
 
+      <div className="min-h-0 flex-1 overflow-y-auto">
       <div className="mx-auto w-full max-w-5xl space-y-8 px-4 py-4 sm:px-6 lg:px-8">
         <section>
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
@@ -596,6 +597,7 @@ function SettingsPage() {
             <p className="text-sm font-medium mt-0.5">@{session.handle}</p>
           </div>
         </section>
+      </div>
       </div>
     </div>
   );

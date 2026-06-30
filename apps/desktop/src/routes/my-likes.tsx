@@ -29,7 +29,7 @@ function MyLikesPage() {
     data?.pages.flatMap((p) => p.data.feed) ?? [];
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex h-full min-h-0 flex-col">
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur border-b border-border px-4 py-3">
         <h1 className="font-semibold text-base">いいね</h1>
         <p className="text-xs text-muted-foreground mt-0.5">
@@ -37,7 +37,7 @@ function MyLikesPage() {
         </p>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <FeedContent>
         {isLoading && (
           <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">

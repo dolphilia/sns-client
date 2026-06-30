@@ -147,7 +147,7 @@ function DiscoverPage() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <header className="sticky top-0 z-10 border-b border-border bg-background/80 px-4 py-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -169,7 +169,7 @@ function DiscoverPage() {
         </div>
       </header>
 
-      <div ref={scrollRootRef} className="flex-1 overflow-y-auto">
+      <div ref={scrollRootRef} className="min-h-0 flex-1 overflow-y-auto">
         <FeedContent>
         {!isConfigured && (
           <div className="px-4 py-10">

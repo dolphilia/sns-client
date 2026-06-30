@@ -19,7 +19,7 @@ function RootLayout() {
 
   if (!hasHydrated || !hasRestoredSession || isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
+      <div className="flex h-dvh items-center justify-center bg-background text-sm text-muted-foreground">
         セッションを確認しています...
       </div>
     );
@@ -35,10 +35,10 @@ function RootLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-dvh overflow-hidden bg-background">
       <Sidebar />
-      <main className="min-w-0 flex-1">
-        <div className="w-full">
+      <main className="h-full min-w-0 flex-1 overflow-hidden">
+        <div className="h-full w-full overflow-hidden">
           <Outlet />
         </div>
       </main>

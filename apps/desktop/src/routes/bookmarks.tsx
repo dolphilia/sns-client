@@ -30,12 +30,12 @@ function BookmarksPage() {
   });
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex h-full min-h-0 flex-col">
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur border-b border-border px-4 py-3">
         <h1 className="font-semibold text-base">ブックマーク</h1>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <FeedContent>
         {bookmarks.length === 0 && (
           <div className="flex items-center justify-center py-16 text-muted-foreground text-sm">

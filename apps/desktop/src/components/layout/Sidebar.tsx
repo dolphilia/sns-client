@@ -34,7 +34,7 @@ export function Sidebar() {
   const accountLabel = profile?.displayName || session?.handle;
 
   return (
-    <aside className="w-60 shrink-0 h-screen sticky top-0 flex flex-col border-r border-border px-3 py-4">
+    <aside className="h-dvh w-60 shrink-0 flex flex-col border-r border-border px-3 py-4">
       <div className="px-3 mb-6">
         <span className="text-xl font-bold tracking-tight">🦋 bsky</span>
       </div>
