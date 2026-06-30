@@ -164,13 +164,10 @@ export function useLike() {
       updateLikeAcrossPostQueries(queryClient, vars.uri, result.liked, result.likeUri);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["timeline"] });
-      queryClient.invalidateQueries({ queryKey: ["discover"] });
-      queryClient.invalidateQueries({ queryKey: ["my-likes"] });
-      queryClient.invalidateQueries({ queryKey: ["my-posts"] });
-      queryClient.invalidateQueries({ queryKey: ["author-feed"] });
-      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
-      queryClient.invalidateQueries({ queryKey: ["thread"] });
+      queryClient.invalidateQueries({
+        queryKey: ["my-likes"],
+        refetchType: "none",
+      });
     },
   });
 }
