@@ -17,6 +17,43 @@ const obsoleteRuleIds = new Set([
   "x-composer-show-schedule",
   "x-composer-show-location",
   "x-composer-show-content-disclosure",
+  "x-timeline-show-media",
+  "x-timeline-card-grid-layout",
+]);
+const useDefaultContentRuleIds = new Set([
+  "x-calm-layout",
+  "x-wide-fluid-layout",
+  "x-composer-show-area",
+  "x-sidebar-show-area",
+  "x-right-sidebar-show-area",
+  "x-right-sidebar-show-search",
+  "x-right-sidebar-show-premium",
+  "x-right-sidebar-show-news",
+  "x-right-sidebar-show-discover",
+  "x-right-sidebar-show-users",
+  "x-experimental-ad-post-visibility-base",
+  "x-experimental-show-ad-posts",
+  "x-experimental-visible-media-post-marker",
+  "x-experimental-visible-media-post-visibility-base",
+  "x-experimental-reposted-post-marker",
+  "x-experimental-reposted-post-visibility-base",
+  "x-experimental-show-reposted-posts",
+  "x-experimental-show-posts-with-visible-media",
+  "x-experimental-show-posts-without-visible-media",
+  "x-experimental-show-first-visible-media-only",
+  "x-experimental-square-crop-images",
+  "x-experimental-image-gallery-view",
+  "x-experimental-prefer-original-translation",
+  "x-timeline-media-description-extra-marker",
+  "x-timeline-show-embedded-post",
+  "x-timeline-show-image",
+  "x-timeline-show-video",
+  "x-timeline-show-media-description",
+  "x-timeline-show-link-card",
+  "x-timeline-show-carousel",
+  "x-timeline-show-metadata-separator",
+  "x-timeline-show-translation-notice",
+  "x-timeline-show-verification-badge",
 ]);
 
 function getStorageDir() {
@@ -83,7 +120,10 @@ export async function loadRules(siteId: SiteId): Promise<BrowserRule[]> {
         runAt: defaultRule.runAt,
         builtin: defaultRule.builtin,
         visible: defaultRule.visible,
-        content: defaultRule.visible === false ? defaultRule.content : savedRule.content,
+        content:
+          defaultRule.visible === false || useDefaultContentRuleIds.has(defaultRule.id)
+            ? defaultRule.content
+            : savedRule.content,
       };
     }),
     ...activeSavedRules.filter((rule) => !defaultIds.has(rule.id)),

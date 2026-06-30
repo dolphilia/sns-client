@@ -1,8 +1,8 @@
 import Editor from "@monaco-editor/react";
-import { Check, CircleHelp, RotateCcw, Save } from "lucide-react";
+import { Check, CircleHelp, Copy, Download, RotateCcw, Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import type { BrowserRule } from "../lib/types";
+import type { BrowserRule, SiteId } from "../lib/types";
 
 interface RulePanelProps {
   rules: BrowserRule[];
@@ -12,7 +12,7 @@ interface RulePanelProps {
   dirty: boolean;
 }
 
-type RulePanelTab = "presets" | "editor";
+type RulePanelTab = "presets" | "editor" | "export";
 
 interface TooltipState {
   text: string;
@@ -21,39 +21,182 @@ interface TooltipState {
   placement: "top" | "bottom";
 }
 
+interface ExportTarget {
+  label: string;
+  domains: string[];
+  matches: string[];
+}
+
+const exportTargets: Record<SiteId, ExportTarget> = {
+  x: {
+    label: "X",
+    domains: ["x.com", "twitter.com"],
+    matches: ["https://x.com/*", "https://twitter.com/*"],
+  },
+  threads: {
+    label: "Threads",
+    domains: ["threads.net", "www.threads.net"],
+    matches: ["https://threads.net/*", "https://www.threads.net/*"],
+  },
+  mixi2: {
+    label: "mixi2",
+    domains: ["mixi.social"],
+    matches: ["https://mixi.social/*"],
+  },
+};
+
+function commentBlock(rule: BrowserRule) {
+  return `/* ${rule.name} (${rule.id}) */`;
+}
+
+function buildStylusCss(rules: BrowserRule[]) {
+  const siteId: SiteId = rules[0]?.siteId ?? "x";
+  const target = exportTargets[siteId];
+  const cssRules = rules.filter((rule) => rule.enabled && rule.type === "css");
+  const body = cssRules.map((rule) => `${commentBlock(rule)}\n${rule.content.trim()}`).join("\n\n");
+  const domains = target.domains.map((domain) => `domain("${domain}")`).join(", ");
+
+  return [
+    `/* SNS Browser Lab: ${target.label} CSS preset */`,
+    "/* Stylus などの CSS 拡張へ読み込むための実験用書き出しです。 */",
+    `/* Generated: ${new Date().toISOString()} */`,
+    "",
+    `@-moz-document ${domains} {`,
+    body
+      .split("\n")
+      .map((line) => (line ? `  ${line}` : ""))
+      .join("\n"),
+    "}",
+    "",
+  ].join("\n");
+}
+
+function buildUserScript(rules: BrowserRule[]) {
+  const siteId: SiteId = rules[0]?.siteId ?? "x";
+  const target = exportTargets[siteId];
+  const cssRules = rules.filter((rule) => rule.enabled && rule.type === "css");
+  const scriptRules = rules.filter((rule) => rule.enabled && rule.type === "script");
+  const css = cssRules.map((rule) => `${commentBlock(rule)}\n${rule.content.trim()}`).join("\n\n");
+  const matches = target.matches.map((match) => `// @match        ${match}`).join("\n");
+  const scriptPayload = JSON.stringify(
+    scriptRules.map((rule) => ({
+      id: rule.id,
+      name: rule.name,
+      content: rule.content,
+    })),
+    null,
+    2,
+  );
+
+  return [
+    "// ==UserScript==",
+    `// @name         SNS Browser Lab - ${target.label} preset`,
+    "// @namespace    https://github.com/dolphilia/sns-client",
+    "// @version      0.1.0",
+    "// @description  SNS Browser Lab の表示設定を Chrome 拡張で検証するための実験用書き出しです。",
+    matches,
+    "// @run-at       document-start",
+    "// @grant        GM_addStyle",
+    "// ==/UserScript==",
+    "",
+    "(function () {",
+    '  "use strict";',
+    "",
+    `  const css = ${JSON.stringify(css)};`,
+    `  const scriptRules = ${scriptPayload.split("\n").join("\n  ")};`,
+    "",
+    "  function addStyle(content) {",
+    "    if (!content.trim()) return;",
+    '    if (typeof GM_addStyle === "function") {',
+    "      GM_addStyle(content);",
+    "      return;",
+    "    }",
+    '    const style = document.createElement("style");',
+    '    style.dataset.snsBrowserExport = "true";',
+    "    style.textContent = content;",
+    "    (document.head || document.documentElement).appendChild(style);",
+    "  }",
+    "",
+    "  addStyle(css);",
+    "",
+    "  for (const rule of scriptRules) {",
+    "    try {",
+    "      Function(rule.content)();",
+    "    } catch (error) {",
+    '      console.error("[SNS Browser Lab export] Failed to run rule:", rule.id, rule.name, error);',
+    "    }",
+    "  }",
+    "})();",
+    "",
+  ].join("\n");
+}
+
+function downloadText(filename: string, content: string) {
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
 export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: RulePanelProps) {
-  const cssRules = useMemo(() => rules.filter((rule) => rule.type === "css" && rule.visible !== false), [rules]);
-  const sidebarRules = useMemo(() => cssRules.filter((rule) => rule.name.startsWith("左サイドバー:")), [cssRules]);
-  const timelineRules = useMemo(() => cssRules.filter((rule) => rule.name.startsWith("タイムライン投稿:")), [cssRules]);
-  const composerRules = useMemo(() => cssRules.filter((rule) => rule.name.startsWith("ポスト作成:")), [cssRules]);
+  const presetRules = useMemo(() => rules.filter((rule) => rule.visible !== false), [rules]);
+  const editableCssRules = useMemo(() => rules.filter((rule) => rule.type === "css" && rule.visible !== false), [rules]);
+  const enabledCssRules = useMemo(() => rules.filter((rule) => rule.enabled && rule.type === "css"), [rules]);
+  const enabledScriptRules = useMemo(() => rules.filter((rule) => rule.enabled && rule.type === "script"), [rules]);
+  const activeSiteId: SiteId = rules[0]?.siteId ?? "x";
+  const activeExportTarget = exportTargets[activeSiteId];
+  const stylusCss = useMemo(() => buildStylusCss(rules), [rules]);
+  const userScript = useMemo(() => buildUserScript(rules), [rules]);
+  const sidebarRules = useMemo(() => presetRules.filter((rule) => rule.name.startsWith("左サイドバー:")), [presetRules]);
+  const rightSidebarRules = useMemo(() => presetRules.filter((rule) => rule.name.startsWith("右サイドバー:")), [presetRules]);
+  const timelineRules = useMemo(() => presetRules.filter((rule) => rule.name.startsWith("タイムライン投稿:")), [presetRules]);
+  const composerRules = useMemo(() => presetRules.filter((rule) => rule.name.startsWith("ポスト作成:")), [presetRules]);
+  const experimentalRules = useMemo(() => presetRules.filter((rule) => rule.name.startsWith("実験的機能:")), [presetRules]);
   const generalRules = useMemo(
     () =>
-      cssRules.filter(
+      presetRules.filter(
         (rule) =>
           !rule.name.startsWith("左サイドバー:") &&
+          !rule.name.startsWith("右サイドバー:") &&
           !rule.name.startsWith("タイムライン投稿:") &&
-          !rule.name.startsWith("ポスト作成:"),
+          !rule.name.startsWith("ポスト作成:") &&
+          !rule.name.startsWith("実験的機能:"),
       ),
-    [cssRules],
+    [presetRules],
   );
   const [activeTab, setActiveTab] = useState<RulePanelTab>("presets");
   const [selectedRuleId, setSelectedRuleId] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const [exportMessage, setExportMessage] = useState("");
 
   useEffect(() => {
-    if (!cssRules.length) {
+    if (!editableCssRules.length) {
       setSelectedRuleId(null);
       return;
     }
-    if (!selectedRuleId || !cssRules.some((rule) => rule.id === selectedRuleId)) {
-      setSelectedRuleId(cssRules[0].id);
+    if (!selectedRuleId || !editableCssRules.some((rule) => rule.id === selectedRuleId)) {
+      setSelectedRuleId(editableCssRules[0].id);
     }
-  }, [cssRules, selectedRuleId]);
+  }, [editableCssRules, selectedRuleId]);
 
-  const selectedRule = rules.find((rule) => rule.id === selectedRuleId) ?? cssRules[0] ?? null;
+  const selectedRule = editableCssRules.find((rule) => rule.id === selectedRuleId) ?? editableCssRules[0] ?? null;
 
   function updateRule(ruleId: string, patch: Partial<BrowserRule>, options?: { persist?: boolean }) {
     onRulesChange(rules.map((rule) => (rule.id === ruleId ? { ...rule, ...patch } : rule)), options);
+  }
+
+  async function copyExport(content: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(content);
+      setExportMessage(`${label} をクリップボードにコピーしました。`);
+    } catch {
+      setExportMessage("クリップボードへコピーできませんでした。ダウンロードを使ってください。");
+    }
   }
 
   function showTooltip(target: HTMLElement, text: string) {
@@ -73,8 +216,11 @@ export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: Rule
   function renderPresetRule(rule: BrowserRule) {
     const label = rule.name
       .replace("左サイドバー: ", "")
+      .replace("右サイドバー: ", "")
       .replace("タイムライン投稿: ", "")
-      .replace("ポスト作成: ", "");
+      .replace("ポスト作成: ", "")
+      .replace("サイト全体: ", "")
+      .replace("実験的機能: ", "");
 
     return (
       <label className="preset-toggle" key={rule.id}>
@@ -112,13 +258,13 @@ export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: Rule
     <aside className="rule-panel">
       <div className="panel-header">
         <div>
-          <h2>CSS 設定</h2>
+          <h2>表示設定</h2>
           <p>プリセットの切り替えと詳細 CSS 編集を行います。</p>
         </div>
         {dirty ? <span className="dirty-badge">未保存</span> : <span className="saved-badge">保存済み</span>}
       </div>
 
-      <div className="rule-tabs" role="tablist" aria-label="CSS 設定の表示切り替え">
+      <div className="rule-tabs" role="tablist" aria-label="表示設定の切り替え">
         <button
           className={activeTab === "presets" ? "is-active" : ""}
           type="button"
@@ -137,6 +283,15 @@ export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: Rule
         >
           詳細 CSS
         </button>
+        <button
+          className={activeTab === "export" ? "is-active" : ""}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "export"}
+          onClick={() => setActiveTab("export")}
+        >
+          書き出し
+        </button>
       </div>
 
       <div className="rule-panel-body">
@@ -154,6 +309,12 @@ export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: Rule
                 <div className="preset-grid">{sidebarRules.map(renderPresetRule)}</div>
               </section>
             ) : null}
+            {rightSidebarRules.length ? (
+              <section className="preset-section">
+                <h3>右サイドバー</h3>
+                <div className="preset-grid">{rightSidebarRules.map(renderPresetRule)}</div>
+              </section>
+            ) : null}
             {timelineRules.length ? (
               <section className="preset-section">
                 <h3>タイムライン投稿</h3>
@@ -166,11 +327,17 @@ export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: Rule
                 <div className="preset-grid">{composerRules.map(renderPresetRule)}</div>
               </section>
             ) : null}
+            {experimentalRules.length ? (
+              <section className="preset-section">
+                <h3>実験的機能</h3>
+                <div className="preset-grid">{experimentalRules.map(renderPresetRule)}</div>
+              </section>
+            ) : null}
           </div>
-        ) : (
+        ) : activeTab === "editor" ? (
           <div className="editor-tab" role="tabpanel" aria-label="詳細 CSS">
             <div className="rule-list">
-              {cssRules.map((rule) => (
+              {editableCssRules.map((rule) => (
                 <button
                   className={`rule-item ${rule.id === selectedRule?.id ? "is-active" : ""}`}
                   type="button"
@@ -207,6 +374,58 @@ export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: Rule
                 <div className="empty-editor">CSS ルールがありません。</div>
               )}
             </div>
+          </div>
+        ) : (
+          <div className="export-tab" role="tabpanel" aria-label="書き出し">
+            <section className="export-card">
+              <h3>Stylus 用 CSS</h3>
+              <p>
+                有効な CSS ルール {enabledCssRules.length} 件を {activeExportTarget.label} の対象ドメインに閉じ込めて書き出します。
+                Stylus の新規スタイルへ貼り付けて検証できます。
+              </p>
+              <div className="export-actions">
+                <button className="secondary-button" type="button" onClick={() => void copyExport(stylusCss, "Stylus 用 CSS")}>
+                  <Copy size={15} />
+                  コピー
+                </button>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => downloadText(`sns-browser-${activeSiteId}.css`, stylusCss)}
+                >
+                  <Download size={15} />
+                  CSS
+                </button>
+              </div>
+            </section>
+
+            <section className="export-card">
+              <h3>OrangeMonkey 用 UserScript</h3>
+              <p>
+                有効な CSS ルール {enabledCssRules.length} 件と script ルール {enabledScriptRules.length} 件をまとめます。
+                Tampermonkey や Violentmonkey での検証にも使える形式です。
+              </p>
+              <div className="export-actions">
+                <button className="secondary-button" type="button" onClick={() => void copyExport(userScript, "UserScript")}>
+                  <Copy size={15} />
+                  コピー
+                </button>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => downloadText(`sns-browser-${activeSiteId}.user.js`, userScript)}
+                >
+                  <Download size={15} />
+                  UserScript
+                </button>
+              </div>
+            </section>
+
+            <div className="export-preview">
+              <strong>対象</strong>
+              <code>{activeExportTarget.matches.join(", ")}</code>
+            </div>
+            {exportMessage ? <p className="export-message">{exportMessage}</p> : null}
           </div>
         )}
       </div>
