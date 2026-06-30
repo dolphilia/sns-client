@@ -19,7 +19,7 @@ export function useTimeline() {
         feedSource,
         customFeedUri,
         selectedCustomFeedUri,
-        includeReposts,
+        excludeReposts,
         onlyImagePosts,
       } = feedSettings;
       const normalizedCustomFeedUri = normalizeFeedUri(
@@ -39,7 +39,7 @@ export function useTimeline() {
             });
 
       const feed = res.data.feed.filter((item) => {
-        if (!includeReposts && item.reason?.$type === "app.bsky.feed.defs#reasonRepost") {
+        if (excludeReposts && item.reason?.$type === "app.bsky.feed.defs#reasonRepost") {
           return false;
         }
 

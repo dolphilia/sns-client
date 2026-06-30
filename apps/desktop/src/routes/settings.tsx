@@ -150,15 +150,15 @@ function SettingsPage() {
 
             <label className="flex items-center justify-between gap-4 cursor-pointer">
               <div>
-                <p className="text-sm font-medium">リポストをフィードに含める</p>
+                <p className="text-sm font-medium">リポストをフィードから除外する</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  オフにするとフォロー中の人の原文を中心に表示します
+                  オンにするとフォロー中の人の原文を中心に表示します
                 </p>
               </div>
               <input
                 type="checkbox"
-                checked={feedSettings.includeReposts}
-                onChange={(e) => setFeedSettings({ includeReposts: e.target.checked })}
+                checked={feedSettings.excludeReposts}
+                onChange={(e) => setFeedSettings({ excludeReposts: e.target.checked })}
                 className="w-4 h-4 accent-primary"
               />
             </label>

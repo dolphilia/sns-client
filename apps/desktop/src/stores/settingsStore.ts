@@ -9,7 +9,7 @@ export const DISCOVER_FEED_URI =
   "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.generator/whats-hot";
 
 export interface FeedSettings {
-  includeReposts: boolean;
+  excludeReposts: boolean;
   onlyImagePosts: boolean;
   feedSource: FeedSource;
   customFeedUri: string;
@@ -64,7 +64,7 @@ interface SettingsState {
 }
 
 const defaultFeedSettings: FeedSettings = {
-  includeReposts: false,
+  excludeReposts: true,
   onlyImagePosts: false,
   feedSource: "following",
   customFeedUri: "",
@@ -162,13 +162,30 @@ export const useSettingsStore = create<SettingsState>()(
       storage: createJSONStorage(() => createDesktopFileStorage()),
       merge: (persisted: unknown, current: SettingsState): SettingsState => {
         const p = persisted as Partial<SettingsState> & {
-          editionSettings?: Partial<FeedSettings>;
+          editionSettings?: Partial<FeedSettings> & { includeReposts?: boolean };
+          feedSettings?: Partial<FeedSettings> & { includeReposts?: boolean };
           filterSettings?: { customKeywords?: string[] };
         };
+        const persistedFeedSettings: Partial<FeedSettings> & { includeReposts?: boolean } =
+          p.feedSettings ?? {};
+        const editionSettings: Partial<FeedSettings> & { includeReposts?: boolean } =
+          p.editionSettings ?? {};
+        const { includeReposts: persistedIncludeReposts, ...nextPersistedFeedSettings } =
+          persistedFeedSettings;
+        const { includeReposts: editionIncludeReposts, ...nextEditionSettings } =
+          editionSettings;
+        const legacyIncludeReposts = persistedIncludeReposts ?? editionIncludeReposts;
+        const shouldMigrateIncludeReposts =
+          legacyIncludeReposts !== undefined &&
+          persistedFeedSettings.excludeReposts === undefined &&
+          editionSettings.excludeReposts === undefined;
         const feedSettings = {
           ...current.feedSettings,
-          ...p.feedSettings,
-          ...p.editionSettings,
+          ...nextPersistedFeedSettings,
+          ...nextEditionSettings,
+          ...(shouldMigrateIncludeReposts
+            ? { excludeReposts: !legacyIncludeReposts }
+            : {}),
         };
         const customFeedUris = [
           ...feedSettings.customFeedUris,
