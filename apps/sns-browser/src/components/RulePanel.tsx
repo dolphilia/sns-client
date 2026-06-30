@@ -176,6 +176,7 @@ export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: Rule
   const sidebarRules = useMemo(() => presetRules.filter((rule) => rule.name.startsWith("左サイドバー:")), [presetRules]);
   const rightSidebarRules = useMemo(() => presetRules.filter((rule) => rule.name.startsWith("右サイドバー:")), [presetRules]);
   const timelineRules = useMemo(() => presetRules.filter((rule) => rule.name.startsWith("タイムライン投稿:")), [presetRules]);
+  const followingRules = useMemo(() => presetRules.filter((rule) => rule.name.startsWith("フォロー中ページ:")), [presetRules]);
   const composerRules = useMemo(() => presetRules.filter((rule) => rule.name.startsWith("ポスト作成:")), [presetRules]);
   const experimentalRules = useMemo(() => presetRules.filter((rule) => rule.name.startsWith("実験的機能:")), [presetRules]);
   const generalRules = useMemo(
@@ -185,6 +186,7 @@ export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: Rule
           !rule.name.startsWith("左サイドバー:") &&
           !rule.name.startsWith("右サイドバー:") &&
           !rule.name.startsWith("タイムライン投稿:") &&
+          !rule.name.startsWith("フォロー中ページ:") &&
           !rule.name.startsWith("ポスト作成:") &&
           !rule.name.startsWith("実験的機能:"),
       ),
@@ -226,6 +228,7 @@ export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: Rule
       .replace("左サイドバー: ", "")
       .replace("右サイドバー: ", "")
       .replace("タイムライン投稿: ", "")
+      .replace("フォロー中ページ: ", "")
       .replace("ポスト作成: ", "")
       .replace("サイト全体: ", "")
       .replace("実験的機能: ", "");
@@ -340,6 +343,12 @@ export function RulePanel({ rules, onRulesChange, onSave, onApply, dirty }: Rule
               <section className="preset-section">
                 <h3>タイムライン投稿</h3>
                 <div className="preset-grid">{timelineRules.map(renderPresetRule)}</div>
+              </section>
+            ) : null}
+            {followingRules.length ? (
+              <section className="preset-section">
+                <h3>フォロー中ページ</h3>
+                <div className="preset-grid">{followingRules.map(renderPresetRule)}</div>
               </section>
             ) : null}
             {composerRules.length ? (

@@ -57,6 +57,7 @@ export const siteDefinitions: Record<SiteId, SiteDefinition> = {
       "x-experimental-show-reposted-posts",
       "x-experimental-show-posts-with-visible-media",
       "x-experimental-show-posts-without-visible-media",
+      "x-experimental-show-unfollowed-followers-only",
       "x-experimental-show-first-visible-media-only",
       "x-experimental-square-crop-images",
       "x-experimental-small-square-images",
@@ -214,6 +215,22 @@ article[data-testid="tweet"] [aria-label*="ポストアナリティクス"]`,
 article[data-testid="tweet"] [aria-label*="共有"]`,
 } as const;
 
+const xFollowingItems = {
+  avatar: `button[data-testid="UserCell"] [data-testid^="UserAvatar-Container-"]`,
+  displayName: `[data-sns-browser-following-display-name="true"]`,
+  verificationBadge: `button[data-testid="UserCell"] [data-testid="icon-verified"],
+button[data-testid="UserCell"] [aria-label="認証済みアカウント"],
+button[data-testid="UserCell"] [aria-label="Verified account"],
+button[data-testid="UserCell"] div[dir="ltr"][class~="r-xoduu5"][class~="r-18u37iz"]:has([data-testid="icon-verified"]),
+button[data-testid="UserCell"] div[dir="ltr"][class~="r-xoduu5"][class~="r-18u37iz"]:has([aria-label="認証済みアカウント"]),
+button[data-testid="UserCell"] div[dir="ltr"][class~="r-xoduu5"][class~="r-18u37iz"]:has([aria-label="Verified account"])`,
+  userId: `[data-sns-browser-following-user-id="true"]`,
+  followedBy: `button[data-testid="UserCell"] [data-testid="userFollowIndicator"],
+button[data-testid="UserCell"] div:has(> [data-testid="userFollowIndicator"])`,
+  grokTranslation: `[data-sns-browser-following-grok-translation="true"]`,
+  bio: `[data-sns-browser-following-bio="true"]`,
+} as const;
+
 const xComposerArea = `[data-testid="primaryColumn"] div:has([data-testid^="tweetTextarea_"]):has([data-testid="toolBar"]):not(:has(article[data-testid="tweet"]))`;
 
 const xRightSidebarItems = {
@@ -294,6 +311,177 @@ const xMediaDescriptionExtraMarkerScript = `
     if (pending) return;
     pending = true;
     window.requestAnimationFrame(markExtras);
+  }
+
+  const observer = new MutationObserver(scheduleMark);
+  observer.observe(document.body ?? document.documentElement, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+  });
+  scheduleMark();
+
+  registry[cleanupKey] = () => {
+    observer.disconnect();
+    clearMarks();
+    delete registry[cleanupKey];
+  };
+})();
+`.trim();
+
+const xFollowingPageMarkerScript = `
+(() => {
+  const cleanupKey = "xFollowingPageMarkers";
+  const registry = window.__snsBrowserRuleCleanups ?? {};
+  window.__snsBrowserRuleCleanups = registry;
+
+  if (typeof registry[cleanupKey] === "function") {
+    registry[cleanupKey]();
+  }
+
+  const cellAttribute = "data-sns-browser-following-cell";
+  const followedBackAttribute = "data-sns-browser-followed-back";
+  const ownFollowingAttribute = "data-sns-browser-own-following";
+  const displayNameAttribute = "data-sns-browser-following-display-name";
+  const userIdAttribute = "data-sns-browser-following-user-id";
+  const grokAttribute = "data-sns-browser-following-grok-translation";
+  const bioAttribute = "data-sns-browser-following-bio";
+  let pending = false;
+
+  function clearMarks() {
+    for (const element of document.querySelectorAll(
+      "[" +
+        cellAttribute +
+        "],[" +
+        followedBackAttribute +
+        "],[" +
+        ownFollowingAttribute +
+        "],[" +
+        displayNameAttribute +
+        "],[" +
+        userIdAttribute +
+        "],[" +
+        grokAttribute +
+        "],[" +
+        bioAttribute +
+        "]",
+    )) {
+      element.removeAttribute(cellAttribute);
+      element.removeAttribute(followedBackAttribute);
+      element.removeAttribute(ownFollowingAttribute);
+      element.removeAttribute(displayNameAttribute);
+      element.removeAttribute(userIdAttribute);
+      element.removeAttribute(grokAttribute);
+      element.removeAttribute(bioAttribute);
+    }
+  }
+
+  function markGrokRows(cell) {
+    for (const element of cell.querySelectorAll("div, span")) {
+      const text = element.textContent?.trim() ?? "";
+      if (text === "Grokによる翻訳" || text === "Translated by Grok") {
+        element.setAttribute(grokAttribute, "true");
+      }
+    }
+  }
+
+  function findContentColumn(cell) {
+    const avatar = cell.querySelector('[data-testid^="UserAvatar-Container-"]');
+    if (!avatar) return null;
+
+    let row = avatar.parentElement;
+    while (row && row !== cell) {
+      for (const child of row.children) {
+        if (!child.contains(avatar) && child.textContent?.trim()) return child;
+      }
+      row = row.parentElement;
+    }
+
+    return null;
+  }
+
+  function markIdentityRows(cell) {
+    const contentColumn = findContentColumn(cell);
+    const anchors = Array.from(
+      (contentColumn ?? cell).querySelectorAll('a[href^="https://x.com/"], a[href^="/"]'),
+    ).filter((anchor) => !anchor.closest('[data-testid^="UserAvatar-Container-"]'));
+
+    const userIdAnchor = anchors.find((anchor) => (anchor.textContent?.trim() ?? "").startsWith("@"));
+    const displayNameAnchor = anchors.find((anchor) => {
+      const text = anchor.textContent?.trim() ?? "";
+      return text && !text.startsWith("@");
+    });
+
+    if (displayNameAnchor) {
+      displayNameAnchor.setAttribute(displayNameAttribute, "true");
+    }
+
+    if (userIdAnchor) {
+      const wrapper = userIdAnchor.closest('div[class~="r-1wbh5a2"][class~="r-dnmrzs"]') ?? userIdAnchor;
+      wrapper.setAttribute(userIdAttribute, "true");
+    }
+  }
+
+  function getOwnFollowingState(cell) {
+    if (
+      cell.querySelector('button[data-testid$="-unfollow"]') ||
+      cell.querySelector('button[aria-label^="フォロー中"]') ||
+      cell.querySelector('button[aria-label^="Following"]')
+    ) {
+      return "true";
+    }
+
+    if (
+      cell.querySelector('button[data-testid$="-follow"]') ||
+      cell.querySelector('button[aria-label^="フォローバック"]') ||
+      cell.querySelector('button[aria-label^="フォロー "]') ||
+      cell.querySelector('button[aria-label^="Follow "]') ||
+      cell.querySelector('button[aria-label^="Follow back"]')
+    ) {
+      return "false";
+    }
+
+    return "unknown";
+  }
+
+  function markBioRows(cell) {
+    const contentColumn = findContentColumn(cell);
+    if (!contentColumn) return;
+    const children = Array.from(contentColumn.children);
+    const headerIndex = children.findIndex((child) =>
+      child.querySelector('button[data-testid$="-unfollow"], button[aria-label*="フォロー中"], button[aria-label*="Following"]'),
+    );
+    const candidates = children.slice(Math.max(headerIndex + 1, 1));
+
+    for (const candidate of candidates) {
+      const text = candidate.textContent?.trim() ?? "";
+      if (!text || text === "Grokによる翻訳" || text === "Translated by Grok") continue;
+      if (candidate.querySelector("button")) continue;
+      candidate.setAttribute(bioAttribute, "true");
+    }
+  }
+
+  function markCells() {
+    pending = false;
+    clearMarks();
+
+    for (const cell of document.querySelectorAll('button[data-testid="UserCell"]')) {
+      const wrapper = cell.closest('[data-testid="cellInnerDiv"]');
+      const target = wrapper ?? cell;
+      const followedBack = cell.querySelector('[data-testid="userFollowIndicator"]') ? "true" : "false";
+      target.setAttribute(cellAttribute, "true");
+      target.setAttribute(followedBackAttribute, followedBack);
+      target.setAttribute(ownFollowingAttribute, getOwnFollowingState(cell));
+      markIdentityRows(cell);
+      markGrokRows(cell);
+      markBioRows(cell);
+    }
+  }
+
+  function scheduleMark() {
+    if (pending) return;
+    pending = true;
+    window.requestAnimationFrame(markCells);
   }
 
   const observer = new MutationObserver(scheduleMark);
@@ -1114,6 +1302,12 @@ function hideXTimelineItemCss(selector: string) {
 }`;
 }
 
+function hideXFollowingItemCss(selector: string) {
+  return `${selector} {
+  display: none !important;
+}`;
+}
+
 function hideXComposerAreaCss(selector: string) {
   return `${selector} {
   display: none !important;
@@ -1144,6 +1338,12 @@ function showXTimelineItemCss(selector: string) {
 }`;
 }
 
+function showXFollowingItemCss(selector: string) {
+  return `${selector} {
+  display: revert !important;
+}`;
+}
+
 function showXComposerAreaCss(selector: string) {
   return `${selector} {
   display: revert !important;
@@ -1165,6 +1365,36 @@ function showXRightSidebarItemCss(selector: string) {
 function showXVisibleMediaPostCss(selector: string) {
   return `${selector} {
   display: revert !important;
+}`;
+}
+
+function highlightXFollowingFollowedByCss() {
+  return `button[data-testid="UserCell"] div:has(> [data-testid="userFollowIndicator"]) {
+  align-items: center !important;
+  background: rgba(29, 155, 240, 0.16) !important;
+  border: 1px solid rgba(29, 155, 240, 0.44) !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  padding: 2px 7px !important;
+}
+
+button[data-testid="UserCell"] [data-testid="userFollowIndicator"] {
+  color: rgb(29, 155, 240) !important;
+  font-weight: 700 !important;
+}`;
+}
+
+function oneWayFollowingOnlyCss() {
+  return `[data-testid="cellInnerDiv"][data-sns-browser-followed-back="true"],
+button[data-testid="UserCell"][data-sns-browser-followed-back="true"] {
+  display: none !important;
+}`;
+}
+
+function unfollowedFollowersOnlyCss() {
+  return `[data-testid="cellInnerDiv"][data-sns-browser-following-cell="true"]:not([data-sns-browser-own-following="false"]),
+button[data-testid="UserCell"][data-sns-browser-following-cell="true"]:not([data-sns-browser-own-following="false"]) {
+  display: none !important;
 }`;
 }
 
@@ -1432,6 +1662,26 @@ function xTimelineShowRule(
     runAt: "document-end",
     builtin: true,
     content: showXTimelineItemCss(selector),
+  };
+}
+
+function xFollowingShowRule(
+  id: string,
+  name: string,
+  selector: string,
+  enabled: boolean,
+  description = "X のフォロー中ページ内の要素を表示します。OFF にすると非表示になります。",
+): BrowserRule {
+  return {
+    id,
+    siteId: "x",
+    name,
+    description,
+    enabled,
+    type: "css",
+    runAt: "document-end",
+    builtin: true,
+    content: showXFollowingItemCss(selector),
   };
 }
 
@@ -1738,6 +1988,66 @@ article [role="group"] span:not(:empty)::after {
   xTimelineShowRule("x-timeline-show-bookmark", "タイムライン投稿: ブックマーク", xTimelineItems.bookmark, true),
   xTimelineShowRule("x-timeline-show-share", "タイムライン投稿: 共有", xTimelineItems.share, false),
   {
+    id: "x-following-page-marker",
+    siteId: "x",
+    name: "X フォロー中ページ表示制御の判定",
+    description: "フォロー中ページの本文、Grok 翻訳表示、フォローバック状態を検出します。",
+    enabled: true,
+    visible: false,
+    type: "script",
+    runAt: "document-end",
+    builtin: true,
+    content: xFollowingPageMarkerScript,
+  },
+  {
+    id: "x-following-visibility-base",
+    siteId: "x",
+    name: "X フォロー中ページ表示制御の土台",
+    description: "フォロー中ページの項目別 ON/OFF のために対象項目をいったん非表示にします。",
+    enabled: true,
+    visible: false,
+    type: "css",
+    runAt: "document-start",
+    builtin: true,
+    content: Object.values(xFollowingItems).map(hideXFollowingItemCss).join("\n\n"),
+  },
+  xFollowingShowRule("x-following-show-avatar", "フォロー中ページ: アバターアイコン", xFollowingItems.avatar, true),
+  xFollowingShowRule("x-following-show-display-name", "フォロー中ページ: ユーザー名", xFollowingItems.displayName, true),
+  xFollowingShowRule(
+    "x-following-show-verification-badge",
+    "フォロー中ページ: 認証マーク",
+    xFollowingItems.verificationBadge,
+    true,
+    "フォロー中ページのユーザー名に付く認証マークや同じアイコン枠に連なる追加アイコンを表示します。OFF にすると非表示になります。",
+  ),
+  xFollowingShowRule("x-following-show-user-id", "フォロー中ページ: ユーザーID", xFollowingItems.userId, true),
+  xFollowingShowRule(
+    "x-following-show-followed-by",
+    "フォロー中ページ: フォローされています",
+    xFollowingItems.followedBy,
+    true,
+    "フォロー中ページの「フォローされています」表示を表示します。OFF にすると非表示になります。",
+  ),
+  xFollowingShowRule(
+    "x-following-show-grok-translation",
+    "フォロー中ページ: Grokによる翻訳",
+    xFollowingItems.grokTranslation,
+    true,
+    "フォロー中ページのプロフィール翻訳で出る「Grokによる翻訳」表示を表示します。OFF にすると非表示になります。",
+  ),
+  xFollowingShowRule("x-following-show-bio", "フォロー中ページ: プロフィール本文", xFollowingItems.bio, true),
+  {
+    id: "x-following-highlight-followed-by",
+    siteId: "x",
+    name: "フォロー中ページ: フォローされていますを目立たせる",
+    description: "フォロー中ページの「フォローされています」表示を青いラベル風に強調します。",
+    enabled: false,
+    type: "css",
+    runAt: "document-end",
+    builtin: true,
+    content: highlightXFollowingFollowedByCss(),
+  },
+  {
     id: "x-composer-visibility-base",
     siteId: "x",
     name: "X ポスト作成エリア表示制御の土台",
@@ -1833,6 +2143,30 @@ article [role="group"] span:not(:empty)::after {
     runAt: "document-end",
     builtin: true,
     content: showXVisibleMediaPostCss(xRepostedPostItem),
+  },
+  {
+    id: "x-experimental-one-way-following-only",
+    siteId: "x",
+    name: "実験的機能: 片思いのみ表示",
+    description:
+      "フォロー中ページで「フォローされています」が付いている相互フォロー候補を隠し、フォローされていないユーザーだけを表示します。",
+    enabled: false,
+    type: "css",
+    runAt: "document-end",
+    builtin: true,
+    content: oneWayFollowingOnlyCss(),
+  },
+  {
+    id: "x-experimental-show-unfollowed-followers-only",
+    siteId: "x",
+    name: "実験的機能: フォロワーは未フォローのみ表示",
+    description:
+      "フォロワーページで、自分がまだフォローしていないユーザーだけを表示します。フォロー中または判定不能のユーザー行は非表示にします。",
+    enabled: false,
+    type: "css",
+    runAt: "document-end",
+    builtin: true,
+    content: unfollowedFollowersOnlyCss(),
   },
   xVisibleMediaPostShowRule(
     "x-experimental-show-posts-with-visible-media",

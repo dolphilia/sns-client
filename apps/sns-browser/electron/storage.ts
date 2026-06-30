@@ -38,6 +38,8 @@ const useDefaultContentRuleIds = new Set([
   "x-experimental-reposted-post-marker",
   "x-experimental-reposted-post-visibility-base",
   "x-experimental-show-reposted-posts",
+  "x-experimental-one-way-following-only",
+  "x-experimental-show-unfollowed-followers-only",
   "x-experimental-show-posts-with-visible-media",
   "x-experimental-show-posts-without-visible-media",
   "x-experimental-show-first-visible-media-only",
@@ -57,6 +59,16 @@ const useDefaultContentRuleIds = new Set([
   "x-timeline-show-metadata-separator",
   "x-timeline-show-translation-notice",
   "x-timeline-show-verification-badge",
+  "x-following-page-marker",
+  "x-following-visibility-base",
+  "x-following-show-avatar",
+  "x-following-show-display-name",
+  "x-following-show-verification-badge",
+  "x-following-show-user-id",
+  "x-following-show-followed-by",
+  "x-following-show-grok-translation",
+  "x-following-show-bio",
+  "x-following-highlight-followed-by",
 ]);
 const customCssRuleIds = new Set(["x-custom-css", "threads-custom-css", "mixi2-custom-css"]);
 const userContentRuleIds = new Set([...customCssRuleIds, "x-experimental-small-square-image-size"]);
