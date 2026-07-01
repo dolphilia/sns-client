@@ -1,8 +1,10 @@
 import { Home, Bell, User, Settings, LogOut, Bookmark, BookText, Heart, Users, Compass } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { PostDialog } from "@/components/post/PostDialog";
 import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/lib/utils";
 import { agent } from "@/lib/agent";
@@ -22,6 +24,7 @@ const navItems = [
 export function Sidebar() {
   const session = useAuthStore((s) => s.session);
   const logout = useAuthStore((s) => s.logout);
+  const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
   const routerState = useRouterState();
   const currentPath = routerState.location.pathname;
   const { data: profileData } = useQuery({
@@ -58,6 +61,9 @@ export function Sidebar() {
             </Link>
           );
         })}
+        <div className="mt-3 px-1">
+          <PostDialog open={isPostDialogOpen} onOpenChange={setIsPostDialogOpen} />
+        </div>
       </nav>
 
       <div className="border-t border-border pt-3">
