@@ -1,5 +1,6 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { PostCard } from "@/components/post/PostCard";
 import { FollowButton } from "@/components/profile/FollowButton";
 import { FeedContent, FeedPosts } from "@/components/feed/FeedLayout";
@@ -11,6 +12,8 @@ import type { AppBskyFeedDefs } from "@atproto/api";
 function MyLikesPage() {
   const session = useAuthStore((s) => s.session);
   if (!session) return <Navigate to="/login" replace />;
+  const scrollRootRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteQuery({
@@ -28,6 +31,28 @@ function MyLikesPage() {
   const posts: AppBskyFeedDefs.FeedViewPost[] =
     data?.pages.flatMap((p) => p.data.feed) ?? [];
 
+  useEffect(() => {
+    const root = scrollRootRef.current;
+    const target = loadMoreRef.current;
+    if (!root || !target || !hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      {
+        root,
+        rootMargin: "480px 0px",
+        threshold: 0,
+      }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur border-b border-border px-4 py-3">
@@ -37,7 +62,7 @@ function MyLikesPage() {
         </p>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div ref={scrollRootRef} className="min-h-0 flex-1 overflow-y-auto">
         <FeedContent>
         {isLoading && (
           <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
@@ -67,7 +92,7 @@ function MyLikesPage() {
           ))}
         </FeedPosts>
 
-        <div className="flex justify-center py-6">
+        <div ref={loadMoreRef} className="flex justify-center py-6">
           {hasNextPage ? (
             <Button
               variant="outline"
